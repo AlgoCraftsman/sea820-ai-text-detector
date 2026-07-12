@@ -1,0 +1,8 @@
+metric,value
+non_empty_rows_before_clean_dedup,487231.0
+rows_after_clean_dedup,464227.0
+dropped_cleaned_text_duplicates,23004.0
+train_rows,371381.0
+test_rows,92846.0
+test_size,0.2
+random_state,42.0

@@ -1,0 +1,8 @@
+metric,value
+rows,487235
+columns,2
+missing_text,0
+missing_generated,0
+duplicate_full_rows,0
+duplicate_texts,0
+empty_or_whitespace_texts,4
