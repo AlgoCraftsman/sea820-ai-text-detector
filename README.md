@@ -75,9 +75,10 @@ Open the notebook and run all cells. Top to bottom it will:
 1. Load the dataset (download if needed).
 2. Inspect schema, labels, missing values, duplicates, and class balance.
 3. Run EDA: text length, vocabulary, class distribution, sample texts.
-4. Build the TF-IDF preprocessing pipeline with a stratified 80/20 split.
-5. Train and evaluate three classic classifiers.
-6. Produce the comparison table and inspect the most indicative tokens.
+4. Save reusable EDA summaries, plots, and baseline tables under `results/`.
+5. Build the TF-IDF preprocessing pipeline with a stratified 80/20 split.
+6. Train and evaluate three classic classifiers.
+7. Produce the comparison table and inspect the most indicative tokens.
 
 Full execution takes about 5 to 8 minutes on Colab or a typical laptop. The TF-IDF step over
 roughly 490k texts is the main cost.
