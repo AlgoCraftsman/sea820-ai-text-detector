@@ -9,3 +9,7 @@ __pycache__/
 # Notebook checkpoints
 .ipynb_checkpoints/
 
+
+# Data files and archives
+*.csv
+*.zip
