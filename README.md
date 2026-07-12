@@ -42,8 +42,10 @@ The notebook loads the data automatically, with no Kaggle credentials required. 
 CSV in this order:
 
 1. the path in the `AIHUMAN_CSV` environment variable, if set;
-2. `AI_Human.csv` in the working directory, if present;
-3. otherwise it downloads and unzips the public Kaggle archive directly.
+2. `data/AI_Human.csv`, if present;
+3. `AI_Human.csv` in the working directory, if present;
+4. `../data/AI_Human.csv`, if present;
+5. otherwise it downloads and unzips the public Kaggle archive into `data/`.
 
 ## Setup
 
