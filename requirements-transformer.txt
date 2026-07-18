@@ -1,0 +1,7 @@
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+datasets>=2.13
+transformers>=4.47
+accelerate>=1.2
+torch>=2.5

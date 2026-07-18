@@ -5,7 +5,12 @@ data/*
 # Python cache files
 __pycache__/
 *.py[cod]
+.venv/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
+
+# Local model checkpoints and experiment logs
+checkpoints/
+runs/
 
