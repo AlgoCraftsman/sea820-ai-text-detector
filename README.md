@@ -90,6 +90,10 @@ If CUDA is unavailable, use the platform-specific command from the
 [official PyTorch installer](https://pytorch.org/get-started/locally/) instead of beginning a
 long CPU training run.
 
+The RTX 3060 environment was verified with PyTorch 2.12.1 and its CUDA 13.0 wheel on
+Windows. Because PyTorch wheel commands are platform-specific, confirm the current command
+in the official selector before reproducing the install on another machine.
+
 ## How to run
 
 Open the notebook and run all cells. Top to bottom it will:
@@ -115,6 +119,29 @@ is reserved for the final model comparison, and its membership is frozen in the 
 `results/transformer_split_manifest.csv.gz` file. See
 [`reports/transformer_data_preparation.md`](reports/transformer_data_preparation.md) for the
 full policy and smoke-test command.
+
+Run the first validation-only training smoke test with:
+
+```powershell
+python -m src.train_transformer `
+  --run-name distilbert-smoke-256-128 `
+  --output-dir checkpoints/distilbert-smoke-256-128 `
+  --train-subset-size 256 `
+  --validation-subset-size 128 `
+  --epochs 1 `
+  --train-batch-size 4 `
+  --eval-batch-size 4 `
+  --gradient-accumulation-steps 4 `
+  --gradient-checkpointing
+```
+
+The command loads only the prepared `train` and `validation` splits into `Trainer`, uses
+dynamic padding, selects checkpoints by F1 for label 1 (AI-generated), and appends measured
+metadata to `results/transformer_experiments.csv`. Checkpoints and raw Trainer output stay
+under ignored `checkpoints/`. An unbounded all-row run additionally requires
+`--confirm-full-run`; review the smoke-run duration estimate before using it. See
+[`reports/transformer_training.md`](reports/transformer_training.md) for the policy and
+configuration details.
 
 Full execution takes about 5 to 8 minutes on Colab or a typical laptop. The TF-IDF step over
 roughly 490k texts is the main cost.
