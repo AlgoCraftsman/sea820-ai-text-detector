@@ -4,6 +4,7 @@ import numpy as np
 
 from src.train_transformer import (
     classify_run,
+    compute_warmup_steps,
     compute_binary_metrics,
     estimate_full_run_hours,
     validate_subset_size,
@@ -62,6 +63,27 @@ class TransformerTrainingHelperTests(unittest.TestCase):
             validation_runtime_seconds=10.0,
         )
         self.assertEqual(hours, 1.06)
+
+    def test_warmup_ratio_is_converted_to_optimizer_steps(self) -> None:
+        steps = compute_warmup_steps(
+            train_rows=256,
+            train_batch_size=4,
+            gradient_accumulation_steps=4,
+            epochs=1,
+            max_steps=-1,
+            warmup_ratio=0.1,
+        )
+        self.assertEqual(steps, 2)
+
+        bounded_steps = compute_warmup_steps(
+            train_rows=1_000,
+            train_batch_size=4,
+            gradient_accumulation_steps=4,
+            epochs=2,
+            max_steps=10,
+            warmup_ratio=0.1,
+        )
+        self.assertEqual(bounded_steps, 1)
 
 
 if __name__ == "__main__":

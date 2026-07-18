@@ -57,5 +57,37 @@ On the project Windows environment, CUDA was verified before implementation with
 - `torch.cuda.is_available()` returned true
 - a CUDA tensor multiplication returned the expected values
 
-The initial measured smoke run and duration estimate will be recorded here after the code
-and helper tests pass.
+## Initial smoke-run outcome
+
+The first GPU smoke run completed on a deterministic stratified subset of 256 training and
+128 validation examples. It used one epoch, FP16, batch size 4, gradient accumulation 4,
+and gradient checkpointing. Dynamic padding was separately verified by collating examples
+of 190, 240, 256, and 269 tokens into a batch width of 269 rather than 512.
+
+| Measurement | Result |
+| --- | ---: |
+| Optimizer steps | 16 |
+| Trainer runtime | 15.723 seconds |
+| Training throughput | 16.282 examples/second |
+| Final validation runtime | 0.889 seconds |
+| Validation accuracy | 0.609375 |
+| Validation precision (AI class) | 0.000000 |
+| Validation recall (AI class) | 0.000000 |
+| Validation F1 (AI class) | 0.000000 |
+| Peak PyTorch GPU allocation | 1,212.5 MiB |
+| Checkpoints retained | 1 |
+
+The tiny smoke subset predicted only the majority human class. Its metrics validate the
+execution and logging path; they are not evidence about final model quality and must not be
+reported as a full training result. The experiment log explicitly labels the run
+`development_smoke` and records `test_split_used=False`.
+
+At the measured throughput, scaling training and validation to all prepared rows gives a
+rough estimate of 6.43 hours for one epoch, or about 12.9 hours for the planned two-epoch
+run. This is an extrapolation from a small warm-cache run, not a guaranteed duration. A
+larger development run would provide a more reliable estimate before committing to the
+full experiment.
+
+Transformers 5.14.1 warned that passing `warmup_ratio` to `TrainingArguments` is deprecated.
+The workflow therefore retains the user-facing ratio but converts it to an explicit number
+of optimizer `warmup_steps` before constructing `TrainingArguments`.

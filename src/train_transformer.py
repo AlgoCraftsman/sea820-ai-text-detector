@@ -54,6 +54,7 @@ EXPERIMENT_FIELDS = (
     "learning_rate",
     "weight_decay",
     "warmup_ratio",
+    "warmup_steps",
     "fp16",
     "gradient_checkpointing",
     "dynamic_padding",
@@ -151,6 +152,28 @@ def estimate_full_run_hours(
             * max(1, math.ceil(epochs))
         )
     return round((train_seconds + validation_seconds) / 3600.0, 2)
+
+
+def compute_warmup_steps(
+    *,
+    train_rows: int,
+    train_batch_size: int,
+    gradient_accumulation_steps: int,
+    epochs: float,
+    max_steps: int,
+    warmup_ratio: float,
+) -> int:
+    """Convert the configured ratio for the current Transformers API."""
+
+    if max_steps > 0:
+        total_steps = max_steps
+    else:
+        batches_per_epoch = math.ceil(train_rows / train_batch_size)
+        updates_per_epoch = math.ceil(
+            batches_per_epoch / gradient_accumulation_steps
+        )
+        total_steps = math.ceil(updates_per_epoch * epochs)
+    return math.ceil(total_steps * warmup_ratio)
 
 
 def _select_stratified_subset(dataset: Any, size: int | None, seed: int) -> Any:
@@ -326,6 +349,14 @@ def main(argv: Iterable[str] | None = None) -> int:
         label2id=LABEL2ID,
         cache_dir=str(args.cache_dir),
     )
+    warmup_steps = compute_warmup_steps(
+        train_rows=len(train_dataset),
+        train_batch_size=args.train_batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
+        epochs=args.epochs,
+        max_steps=args.max_steps,
+        warmup_ratio=args.warmup_ratio,
+    )
 
     training_args = TrainingArguments(
         output_dir=str(args.output_dir),
@@ -339,7 +370,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         max_steps=args.max_steps,
         learning_rate=args.learning_rate,
         weight_decay=args.weight_decay,
-        warmup_ratio=args.warmup_ratio,
+        warmup_steps=warmup_steps,
         fp16=use_fp16,
         gradient_checkpointing=args.gradient_checkpointing,
         eval_strategy="epoch",
@@ -418,6 +449,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         "learning_rate": args.learning_rate,
         "weight_decay": args.weight_decay,
         "warmup_ratio": args.warmup_ratio,
+        "warmup_steps": warmup_steps,
         "fp16": use_fp16,
         "gradient_checkpointing": args.gradient_checkpointing,
         "dynamic_padding": True,
