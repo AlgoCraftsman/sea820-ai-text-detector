@@ -1,0 +1,73 @@
+{
+  "dataset_path": "data/AI_Human.csv",
+  "prepared_dataset_path": "data/processed/distilbert_cased_seed42",
+  "development_row_limit": null,
+  "random_seed": 42,
+  "split_strategy": "stratified 80/10/10",
+  "test_set_policy": "Do not evaluate on test until final model comparison.",
+  "model_name": "distilbert/distilbert-base-cased",
+  "tokenizer_max_length": 512,
+  "padding": "dynamic per batch",
+  "cleaning": {
+    "source_rows": 487235,
+    "loaded_rows": 487235,
+    "empty_rows_dropped": 4,
+    "normalized_duplicates_dropped": 23004,
+    "usable_rows": 464227
+  },
+  "splits": {
+    "train": {
+      "rows": 371381,
+      "label_counts": {
+        "0": 227572,
+        "1": 143809
+      }
+    },
+    "validation": {
+      "rows": 46423,
+      "label_counts": {
+        "0": 28447,
+        "1": 17976
+      }
+    },
+    "test": {
+      "rows": 46423,
+      "label_counts": {
+        "0": 28446,
+        "1": 17977
+      }
+    }
+  },
+  "truncation_analysis": {
+    "train": {
+      "rows": 371381,
+      "max_length": 512,
+      "rows_exceeding_max_length": 124985,
+      "fraction_exceeding_max_length": 0.336541,
+      "token_length_p50": 443.0,
+      "token_length_p75": 571.0,
+      "token_length_p90": 743.0,
+      "token_length_p95": 869.0,
+      "token_length_p99": 1141.0,
+      "token_length_max": 2477
+    },
+    "validation": {
+      "rows": 46423,
+      "max_length": 512,
+      "rows_exceeding_max_length": 15588,
+      "fraction_exceeding_max_length": 0.335782,
+      "token_length_p50": 442.0,
+      "token_length_p75": 570.0,
+      "token_length_p90": 743.0,
+      "token_length_p95": 869.0,
+      "token_length_p99": 1145.78,
+      "token_length_max": 2080
+    }
+  },
+  "truncation_analysis_excludes_test": true,
+  "split_manifest": {
+    "path": "results/transformer_split_manifest.csv.gz",
+    "rows": 464227,
+    "sha256": "16a0ac74326c633f390329c287335518c47fcf4728adc923753a68034adbdd45"
+  }
+}

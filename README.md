@@ -22,7 +22,7 @@ sea820-ai-text-detector/
 ├── notebooks/
 │   └── aiTextClassifier.ipynb   # Week 1: EDA and classic TF-IDF baseline (this deliverable)
 ├── data/                        # dataset lands here at runtime (not committed, too large)
-├── src/                         # shared helper code
+├── src/                         # shared preprocessing and training code
 ├── results/                     # saved metrics and figures
 ├── reports/                     # written report
 ├── slides/                      # presentation
@@ -68,6 +68,28 @@ If you already have the CSV locally, skip the download by pointing the notebook 
 export AIHUMAN_CSV=/path/to/AI_Human.csv
 ```
 
+### Week 2 Transformer environment
+
+Create a separate environment and install the Transformer dependencies:
+
+```bash
+python -m venv .venv
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements-transformer.txt
+```
+
+Confirm that PyTorch sees the RTX 3060 before training:
+
+```bash
+python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU')"
+```
+
+If CUDA is unavailable, use the platform-specific command from the
+[official PyTorch installer](https://pytorch.org/get-started/locally/) instead of beginning a
+long CPU training run.
+
 ## How to run
 
 Open the notebook and run all cells. Top to bottom it will:
@@ -79,6 +101,20 @@ Open the notebook and run all cells. Top to bottom it will:
 5. Build the TF-IDF preprocessing pipeline with a stratified 80/20 split.
 6. Train and evaluate three classic classifiers.
 7. Produce the comparison table and inspect the most indicative tokens.
+
+Prepare the deterministic Week 2 Hugging Face DatasetDict with:
+
+```bash
+python -m src.transformer_data
+```
+
+This command creates a stratified 80/10/10 split with seed 42, measures 512-token
+truncation only on training/validation data, tokenizes with DistilBERT without static
+padding, and saves the prepared DatasetDict under ignored `data/processed/`. The test split
+is reserved for the final model comparison, and its membership is frozen in the compressed
+`results/transformer_split_manifest.csv.gz` file. See
+[`reports/transformer_data_preparation.md`](reports/transformer_data_preparation.md) for the
+full policy and smoke-test command.
 
 Full execution takes about 5 to 8 minutes on Colab or a typical laptop. The TF-IDF step over
 roughly 490k texts is the main cost.
