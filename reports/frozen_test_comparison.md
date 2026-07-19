@@ -77,7 +77,37 @@ The confirmed run creates:
 
 ## Measured results
 
-Pending the one confirmed frozen-test evaluation.
+The single confirmed run completed on 2026-07-19. Every model used the same 46,423 frozen
+test rows, and both classic models used only the 371,381 frozen training rows for fitting.
+
+| Model | Accuracy | Precision | Recall | F1 | Test loss |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Linear SVM | 0.999591 | 0.999722 | 0.999221 | 0.999471 | N/A |
+| DistilBERT | 0.998923 | 0.998388 | 0.998832 | 0.998610 | 0.005618 |
+| Logistic Regression | 0.995929 | 0.997984 | 0.991489 | 0.994726 | N/A |
+
+Linear SVM was strongest by frozen-test F1. The error counts derived from the saved
+predictions are:
+
+| Model | False positives | False negatives | Total errors |
+| --- | ---: | ---: | ---: |
+| Linear SVM | 5 | 14 | 19 |
+| DistilBERT | 29 | 21 | 50 |
+| Logistic Regression | 36 | 153 | 189 |
+
+TF-IDF fitting and transformation took 316.747 seconds. Classifier fitting plus prediction
+took 8.403 seconds for Logistic Regression and 10.125 seconds for Linear SVM. DistilBERT
+test inference took 279.996 seconds on the NVIDIA GeForce RTX 3060 Laptop GPU. The complete
+guarded run, including raw-source reconstruction and integrity checks, took 630.650 seconds.
+
+The saved predictions were independently reloaded after the run. They contain 46,423
+unique source-row IDs, the frozen label counts (28,446 human and 17,977 AI-generated), no
+missing values, and complete predictions/scores for all three models. Recomputed metrics
+and confusion counts match `results/frozen_test_metrics.csv` exactly.
+
+No tuning occurred after observing these results. In particular, the stronger Linear SVM
+test result does not authorize changes to DistilBERT, its checkpoint, TF-IDF, model
+parameters, thresholds, or membership.
 
 Near-ceiling results must be interpreted as evidence about this dataset, not as proof of a
 universally reliable AI-text detector. Generator-specific and dataset-construction artifacts

@@ -20,6 +20,7 @@ from typing import Any, Iterable, Iterator
 
 import numpy as np
 import pandas as pd
+import sklearn
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
@@ -700,6 +701,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         "environment": {
             "python_version": platform.python_version(),
             "pandas_version": pd.__version__,
+            "scikit_learn_version": sklearn.__version__,
         },
     }
 
