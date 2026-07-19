@@ -148,14 +148,15 @@ roughly 490k texts is the main cost.
 
 ### Transformer development status
 
-The train/validation-only GPU workflow has been validated on an RTX 3060. A one-epoch
-development run with 4,096 stratified training examples and 1,024 stratified validation
-examples reached validation F1 `0.9641` for the AI-generated class. This is a reduced-subset
-development result, not the final Transformer score. The frozen test set was not used.
+The first full DistilBERT epoch trained on all 371,381 prepared training examples and
+evaluated all 46,423 validation examples. It reached validation accuracy `0.9993` and F1
+`0.9991` for the AI-generated class in approximately 2.28 hours on the RTX 3060. The frozen
+test set was not used, so this is the full-validation result rather than the final test
+score.
 
-Measured throughput estimates approximately 3.74 hours for one full epoch. The recommended
-next run is one full epoch with validation, followed by a resumable second epoch only after
-reviewing the first full-validation result. See
+The one-epoch checkpoint is preserved for a possible resumable second epoch. Review the
+full-validation result before spending another multi-hour run, then freeze the selected
+configuration before the final test evaluation. See
 [`reports/transformer_training.md`](reports/transformer_training.md) and
 `results/transformer_experiments.csv` for the complete settings and caveats.
 
