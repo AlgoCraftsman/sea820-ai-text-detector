@@ -160,6 +160,31 @@ configuration before the final test evaluation. See
 [`reports/transformer_training.md`](reports/transformer_training.md) and
 `results/transformer_experiments.csv` for the complete settings and caveats.
 
+### Frozen final comparison
+
+The final evaluator is guarded so its default invocation performs preflight checks without
+scoring the test split:
+
+```powershell
+python -m src.evaluate_frozen_comparison
+```
+
+Preflight verifies the version-controlled manifest SHA-256, split and label counts, source
+CSV schema, frozen checkpoint architecture and label mappings, required local artifacts,
+and fixed classic/Transformer configuration. After tests and validation-only GPU inference
+have passed, the final write-once comparison is run explicitly with:
+
+```powershell
+python -m src.evaluate_frozen_comparison --confirm-test-evaluation
+```
+
+That single command reconstructs classic-model rows by the manifest's original
+`source_row_id`, verifies source labels, fits TF-IDF and both classic classifiers only on
+frozen training rows, and scores Logistic Regression, Linear SVM, and the frozen one-epoch
+DistilBERT checkpoint on the same frozen test membership. It writes reusable metrics,
+per-row predictions/scores, and an audit record under `results/` and refuses to overwrite
+them. See [`reports/frozen_test_comparison.md`](reports/frozen_test_comparison.md).
+
 ## Current results (Week 1 baseline)
 
 Test set: 20% stratified hold-out (about 93k texts), after de-duplicating on the cleaned text.
