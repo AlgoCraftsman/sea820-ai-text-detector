@@ -146,6 +146,19 @@ configuration details.
 Full execution takes about 5 to 8 minutes on Colab or a typical laptop. The TF-IDF step over
 roughly 490k texts is the main cost.
 
+### Transformer development status
+
+The train/validation-only GPU workflow has been validated on an RTX 3060. A one-epoch
+development run with 4,096 stratified training examples and 1,024 stratified validation
+examples reached validation F1 `0.9641` for the AI-generated class. This is a reduced-subset
+development result, not the final Transformer score. The frozen test set was not used.
+
+Measured throughput estimates approximately 3.74 hours for one full epoch. The recommended
+next run is one full epoch with validation, followed by a resumable second epoch only after
+reviewing the first full-validation result. See
+[`reports/transformer_training.md`](reports/transformer_training.md) and
+`results/transformer_experiments.csv` for the complete settings and caveats.
+
 ## Current results (Week 1 baseline)
 
 Test set: 20% stratified hold-out (about 93k texts), after de-duplicating on the cleaned text.

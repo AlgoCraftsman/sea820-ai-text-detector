@@ -91,3 +91,45 @@ full experiment.
 Transformers 5.14.1 warned that passing `warmup_ratio` to `TrainingArguments` is deprecated.
 The workflow therefore retains the user-facing ratio but converts it to an explicit number
 of optimizer `warmup_steps` before constructing `TrainingArguments`.
+
+## Larger development-run outcome
+
+A second run used deterministic stratified subsets of 4,096 training and 1,024 validation
+examples. It retained the same model and RTX 3060 settings and trained for one epoch. This
+run was large enough to confirm that the classifier learns rather than only exercising the
+training code.
+
+| Measurement | Result |
+| --- | ---: |
+| Optimizer steps | 256 |
+| Warmup steps | 26 |
+| Trainer runtime | 141.383 seconds |
+| Training throughput | 28.971 examples/second |
+| Training loss | 0.818425 |
+| Final validation runtime | 14.417 seconds |
+| Validation loss | 0.124723 |
+| Validation accuracy | 0.971680 |
+| Validation precision (AI class) | 0.948780 |
+| Validation recall (AI class) | 0.979849 |
+| Validation F1 (AI class) | 0.964064 |
+| Peak PyTorch GPU allocation | 1,212.5 MiB |
+| Checkpoints retained | 1 |
+
+The best checkpoint was selected at step 256 by validation F1. Its saved configuration
+retains the explicit mappings `0 = human` and `1 = AI-generated`, uses single-label
+classification, and confirms a maximum of 512 positional embeddings. The experiment log
+labels the result `development_smoke` and records `test_split_used=False`.
+
+This development F1 must not be presented as the final Transformer score: both training and
+validation were reduced subsets, and the frozen test set remains untouched. It also cannot
+be compared directly with the Week 1 baseline scores, which used a different holdout.
+
+The larger run provides a more stable throughput estimate than the initial 256-example
+smoke test. Scaling its measured training and validation rates gives approximately 3.74
+hours for one full epoch and 7.48 hours for two full epochs. Actual time may vary with
+thermal throttling and other GPU use.
+
+The recommended full-run sequence is one confirmed full epoch followed by complete
+validation. If that run remains stable, resume the saved checkpoint to a second epoch rather
+than committing to both epochs up front. This preserves an intermediate model and makes the
+multi-hour decision auditable.
