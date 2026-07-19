@@ -133,3 +133,59 @@ The recommended full-run sequence is one confirmed full epoch followed by comple
 validation. If that run remains stable, resume the saved checkpoint to a second epoch rather
 than committing to both epochs up front. This preserves an intermediate model and makes the
 multi-hour decision auditable.
+
+## First full-epoch outcome
+
+The first full run trained on all 371,381 prepared training examples and evaluated all
+46,423 validation examples after the epoch. It used the same seed and model configuration
+as the development runs. The frozen test split was not passed to `Trainer`, evaluated, or
+inspected.
+
+| Measurement | Result |
+| --- | ---: |
+| Training rows | 371,381 |
+| Validation rows | 46,423 |
+| Optimizer steps | 23,212 |
+| Warmup steps | 2,322 |
+| Trainer runtime | 7,968.572 seconds |
+| Training throughput | 46.606 examples/second |
+| Training loss | 0.116175 |
+| Final validation runtime | 228.066 seconds |
+| Validation loss | 0.003812 |
+| Validation accuracy | 0.999311 |
+| Validation precision (AI class) | 0.998888 |
+| Validation recall (AI class) | 0.999332 |
+| Validation F1 (AI class) | 0.999110 |
+| Peak PyTorch GPU allocation | 1,213.7 MiB |
+| Checkpoints retained | 1 |
+
+The best checkpoint was selected at the end of epoch one, step 23,212, by full-validation
+F1. Its configuration confirms `0 = human`, `1 = AI-generated`, single-label
+classification, and 512 maximum positional embeddings. Training completed without an
+out-of-memory condition, and the retained checkpoint remains under the ignored
+`checkpoints/distilbert-full-epoch1/` directory.
+
+The measured wall-clock estimate recorded by the experiment workflow was 2.28 hours for a
+full epoch, substantially faster than the development-subset extrapolation. GPU temperature
+held at approximately 84-85 degrees Celsius during sustained training and returned to idle
+after completion.
+
+This is a validation result, not the final test score. It is also not yet an apples-to-apples
+comparison with the Week 1 classic baseline because the existing baseline metrics used a
+different holdout. The selected classic baseline must later be rerun against the frozen test
+membership, and the frozen test must remain untouched until the Transformer configuration
+is finalized.
+
+The first epoch already achieved a validation F1 of 0.999110 and validation loss of
+0.003812. A second epoch is therefore optional rather than automatically required: resume
+only if the project wants an explicit epoch-one versus epoch-two validation comparison, and
+retain epoch one as a candidate in case validation performance worsens.
+
+### Monitoring note
+
+The managed PowerShell wrapper reported a nonzero shell status because it promoted the
+Transformers model-loading message written to stderr to `NativeCommandError`. The Python
+training workflow itself completed and wrote its `completed` experiment row, train and
+validation result files, Trainer state, model configuration, and best checkpoint. Future
+monitored runs should redirect stdout and stderr separately to avoid this PowerShell status
+artifact.
