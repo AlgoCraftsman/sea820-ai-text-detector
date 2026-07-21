@@ -170,16 +170,24 @@ full epoch, substantially faster than the development-subset extrapolation. GPU 
 held at approximately 84-85 degrees Celsius during sustained training and returned to idle
 after completion.
 
-This is a validation result, not the final test score. It is also not yet an apples-to-apples
-comparison with the Week 1 classic baseline because the existing baseline metrics used a
-different holdout. The selected classic baseline must later be rerun against the frozen test
-membership, and the frozen test must remain untouched until the Transformer configuration
-is finalized.
+This was a validation result rather than a test score. It was not compared directly with the
+Week 1 classic metrics because those metrics used a different holdout. The later final
+comparison reran the classic baselines and the frozen Transformer against the same frozen
+test membership.
 
-The first epoch already achieved a validation F1 of 0.999110 and validation loss of
-0.003812. A second epoch is therefore optional rather than automatically required: resume
-only if the project wants an explicit epoch-one versus epoch-two validation comparison, and
-retain epoch one as a candidate in case validation performance worsens.
+## Final freeze and test result
+
+The user froze the first full epoch as the final Transformer configuration. A second epoch
+was not run: validation F1 was already 0.999110, validation loss was 0.003812, remaining
+upside was very small, and a naive resumed epoch would change the learning-rate schedule
+after the original one-epoch schedule had decayed to zero.
+
+After the checkpoint and evaluation implementation were frozen and validated, the model was
+evaluated once on all 46,423 frozen test rows. It reached accuracy 0.998923, AI-class
+precision 0.998388, recall 0.998832, F1 0.998610, and test loss 0.005618. This corresponds
+to 29 false positives and 21 false negatives. No tuning occurred after these test results
+were observed. The apples-to-apples classic comparison, predictions, audit record, and
+interpretation are documented in `reports/frozen_test_comparison.md`.
 
 ### Monitoring note
 

@@ -1,0 +1,92 @@
+{
+  "status": "completed",
+  "manifest_sha256": "16a0ac74326c633f390329c287335518c47fcf4728adc923753a68034adbdd45",
+  "split_counts": {
+    "train": 371381,
+    "validation": 46423,
+    "test": 46423
+  },
+  "checkpoint": "checkpoints/distilbert-full-epoch1/checkpoint-23212",
+  "configuration": {
+    "cleaning": {
+      "lowercase": true,
+      "url_pattern": "http\\S+|www\\.\\S+",
+      "collapse_whitespace": true,
+      "strip": true
+    },
+    "tfidf": {
+      "stop_words": "english",
+      "ngram_range": [
+        1,
+        2
+      ],
+      "min_df": 5,
+      "max_features": 50000,
+      "sublinear_tf": true
+    },
+    "models": {
+      "logistic_regression": {
+        "class": "LogisticRegression",
+        "max_iter": 1000,
+        "C": 1.0,
+        "other_parameters": "scikit-learn defaults"
+      },
+      "linear_svm": {
+        "class": "LinearSVC",
+        "C": 1.0,
+        "other_parameters": "scikit-learn defaults"
+      },
+      "distilbert": {
+        "checkpoint": "checkpoints/distilbert-full-epoch1/checkpoint-23212",
+        "eval_batch_size": 4,
+        "dynamic_padding": true,
+        "retained_columns": [
+          "input_ids",
+          "attention_mask",
+          "labels"
+        ]
+      }
+    },
+    "positive_label": 1,
+    "seed": 42
+  },
+  "started_at_utc": "2026-07-19T19:31:31.816509+00:00",
+  "finished_at_utc": "2026-07-19T19:42:02.466719+00:00",
+  "elapsed_seconds": 630.65021,
+  "source_csv": "data/AI_Human.csv",
+  "prepared_dataset": "data/processed/distilbert_cased_seed42",
+  "metrics_path": "results/frozen_test_metrics.csv",
+  "predictions_path": "results/frozen_test_predictions.csv.gz",
+  "classic_details": {
+    "vocabulary_size": 50000,
+    "train_matrix_shape": [
+      371381,
+      50000
+    ],
+    "test_matrix_shape": [
+      46423,
+      50000
+    ],
+    "vectorization_runtime_seconds": 316.7474795000162,
+    "source_train_labels_verified": 371381,
+    "source_test_labels_verified": 46423
+  },
+  "transformer_details": {
+    "prepared_test_rows_verified": 46423,
+    "gpu": "NVIDIA GeForce RTX 3060 Laptop GPU",
+    "cuda_version": "13.0",
+    "torch_version": "2.12.1+cu130",
+    "transformers_version": "5.14.1"
+  },
+  "test_policy": {
+    "configuration_frozen_before_test": true,
+    "test_used_for_model_selection": false,
+    "tuning_after_test_evaluation": false,
+    "statement": "The frozen test split was evaluated for the final comparison only. No model or preprocessing tuning occurred after test results were observed."
+  },
+  "environment": {
+    "python_version": "3.12.13",
+    "pandas_version": "3.0.3",
+    "scikit_learn_version": "1.9.0"
+  }
+}

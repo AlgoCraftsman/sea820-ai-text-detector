@@ -154,11 +154,42 @@ evaluated all 46,423 validation examples. It reached validation accuracy `0.9993
 test set was not used, so this is the full-validation result rather than the final test
 score.
 
-The one-epoch checkpoint is preserved for a possible resumable second epoch. Review the
-full-validation result before spending another multi-hour run, then freeze the selected
-configuration before the final test evaluation. See
+The one-epoch checkpoint was frozen as the final Transformer model. A second epoch was not
+run because validation F1 was already near ceiling, remaining upside was very small, and a
+naive resume would alter the completed one-epoch learning-rate schedule. No further tuning
+occurred after the final test evaluation. See
 [`reports/transformer_training.md`](reports/transformer_training.md) and
 `results/transformer_experiments.csv` for the complete settings and caveats.
+
+### Frozen final comparison
+
+The final evaluator is guarded so its default invocation performs preflight checks without
+scoring the test split:
+
+```powershell
+python -m src.evaluate_frozen_comparison
+```
+
+Preflight verifies the version-controlled manifest SHA-256, split and label counts, source
+CSV schema, frozen checkpoint architecture and label mappings, required local artifacts,
+and fixed classic/Transformer configuration. After tests and validation-only GPU inference
+have passed, the final write-once comparison is run explicitly with:
+
+```powershell
+python -m src.evaluate_frozen_comparison --confirm-test-evaluation
+```
+
+That single command reconstructs classic-model rows by the manifest's original
+`source_row_id`, verifies source labels, fits TF-IDF and both classic classifiers only on
+frozen training rows, and scores Logistic Regression, Linear SVM, and the frozen one-epoch
+DistilBERT checkpoint on the same frozen test membership. It writes reusable metrics,
+per-row predictions/scores, and an audit record under `results/` and refuses to overwrite
+them. See [`reports/frozen_test_comparison.md`](reports/frozen_test_comparison.md).
+
+The confirmed frozen-test run is complete. Linear SVM was strongest with F1 `0.999471`,
+followed by DistilBERT at `0.998610` and Logistic Regression at `0.994726`. These scores use
+the same 46,423 test rows and are the appropriate final comparison; the older Week 1 table
+below used a different 20% holdout and is retained only as the original notebook result.
 
 ## Current results (Week 1 baseline)
 
@@ -178,7 +209,7 @@ artifacts rather than a robust human-vs-AI signal.
 ## Roadmap
 
 - Week 1, Foundations and classic model: EDA and TF-IDF baseline (`aiTextClassifier.ipynb`). Done.
-- Week 2, Transformer: fine-tune DistilBERT with the Hugging Face `Trainer` API and compare to the baseline.
+- Week 2, Transformer: fine-tune DistilBERT and complete the frozen-test comparison. Done.
 - Week 3, Analysis and reporting: error analysis, ethical discussion, report, and slides.
 
 ## Team
