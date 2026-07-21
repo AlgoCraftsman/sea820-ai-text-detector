@@ -1,0 +1,4 @@
+model,accuracy,precision,recall,f1,true_negatives,false_positives,false_negatives,true_positives,total_errors,score_type,error_strength_statistic,median_error_strength,errors_with_strength_at_least_0_90,errors_with_strength_at_least_0_99
+Logistic Regression,0.995928742218297,0.9979843225083986,0.9914891249930466,0.9947261210480788,28410,36,153,17824,189,label_1_probability,incorrect_predicted_class_probability,0.6726662834195671,33,1
+Linear SVM,0.9995907201171833,0.9997217275155833,0.9992212271235468,0.9994714146612881,28441,5,14,17963,19,label_1_decision_function,absolute_decision_function_margin,0.141563611550299,,
+DistilBERT,0.9989229476767981,0.998387545176536,0.9988318406853202,0.9986096435125966,28417,29,21,17956,50,label_1_probability,incorrect_predicted_class_probability,0.99513238,44,28

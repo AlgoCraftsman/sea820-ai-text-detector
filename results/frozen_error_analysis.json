@@ -1,0 +1,30 @@
+{
+  "status": "completed",
+  "created_at_utc": "2026-07-21T00:44:42.750292+00:00",
+  "predictions_path": "results/frozen_test_predictions.csv.gz",
+  "predictions_sha256": "11b6e98055bd0aeef177c5202b2478c3dc7c689218a2e66afb70853e1e413422",
+  "prepared_dataset_path": "data/processed/distilbert_cased_seed42",
+  "checkpoint_path": "checkpoints/distilbert-full-epoch1/checkpoint-23212",
+  "test_rows": 46423,
+  "label_counts": {
+    "0": 28446,
+    "1": 17977
+  },
+  "max_length": 512,
+  "truncated_rows": 15600,
+  "truncated_fraction": 0.33604032483898066,
+  "rows_with_any_model_error": 223,
+  "outputs": {
+    "model_summary": "results/frozen_error_analysis_by_model.csv",
+    "slices": "results/frozen_error_analysis_slices.csv",
+    "overlap": "results/frozen_error_overlap.csv",
+    "error_examples": "results/frozen_error_examples.csv.gz",
+    "confusion_figure": "results/figures/frozen_confusion_matrices.svg",
+    "truncation_figure": "results/figures/frozen_error_rate_by_truncation.svg"
+  },
+  "policy": {
+    "models_or_thresholds_changed": false,
+    "test_used_for_tuning": false,
+    "text_storage": "500-character excerpts for rows misclassified by any model"
+  }
+}
