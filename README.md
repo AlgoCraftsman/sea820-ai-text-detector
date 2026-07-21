@@ -191,6 +191,17 @@ followed by DistilBERT at `0.998610` and Logistic Regression at `0.994726`. Thes
 the same 46,423 test rows and are the appropriate final comparison; the older Week 1 table
 below used a different 20% holdout and is retained only as the original notebook result.
 
+Run the post-evaluation error analysis with:
+
+```powershell
+python -m src.analyze_frozen_errors --overwrite
+```
+
+This verifies the frozen predictions, aligns prepared rows by source ID, measures true
+untruncated token lengths, and saves confusion, model-overlap, length, truncation,
+opening-style, confidence, and compact qualitative-example artifacts. It does not retrain or
+tune any model. See [`reports/error_analysis.md`](reports/error_analysis.md).
+
 ## Current results (Week 1 baseline)
 
 Test set: 20% stratified hold-out (about 93k texts), after de-duplicating on the cleaned text.
@@ -210,7 +221,7 @@ artifacts rather than a robust human-vs-AI signal.
 
 - Week 1, Foundations and classic model: EDA and TF-IDF baseline (`aiTextClassifier.ipynb`). Done.
 - Week 2, Transformer: fine-tune DistilBERT and complete the frozen-test comparison. Done.
-- Week 3, Analysis and reporting: error analysis, ethical discussion, report, and slides.
+- Week 3, Analysis and reporting: error analysis done; ethical discussion, report, and slides remain.
 
 ## Team
 
