@@ -23,7 +23,7 @@ from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 
 DEFAULT_DATASET_PATH = Path("data/processed/distilbert_cased_seed42")
 DEFAULT_OUTPUT_DIR = Path("checkpoints/distilbert-cased-seed42")
-DEFAULT_EXPERIMENT_LOG = Path("results/transformer_experiments.csv")
+DEFAULT_EXPERIMENT_LOG = Path("results/scripted_transformer_experiments.csv")
 DEFAULT_CACHE_DIR = Path("data/huggingface-cache")
 DEFAULT_MODEL_NAME = "distilbert/distilbert-base-cased"
 DEFAULT_SEED = 42

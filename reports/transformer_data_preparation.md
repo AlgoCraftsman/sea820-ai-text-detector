@@ -1,7 +1,12 @@
 # Transformer Data Preparation
 
-This workflow is the first Week 2 deliverable. It creates the frozen data inputs for all
-Transformer experiments and prevents the final test set from influencing model selection.
+> **Historical scripted workflow.** The executed
+> `notebooks/transformer_finetuning.ipynb` is now canonical for Week 2, with
+> split counts in `results/split_summary.csv`. This report is retained to
+> document the earlier cased, 512-token workflow.
+
+This workflow created frozen data inputs for the earlier scripted Transformer
+experiments and prevented the final test set from influencing model selection.
 
 ## Decisions
 
@@ -23,8 +28,8 @@ Transformer experiments and prevents the final test set from influencing model s
 The saved DatasetDict retains `source_row_id` and `dedup_hash`, so later predictions can be
 joined back to source examples and the split membership can be audited. Prepared datasets
 are written under `data/processed/` and remain ignored by Git along with the source CSV.
-The compressed split manifest and small preparation summary under `results/` are intended
-for version control.
+The scripted workflow can regenerate its preparation summary and split
+manifest under `results/` using filenames prefixed with `scripted_`.
 
 The Week 1 baseline metrics were calculated on a 20% holdout, not this new frozen 10% test
 split. Keep those scores as the Week 1 baseline record, but rerun the selected classic model
@@ -53,12 +58,13 @@ python -m src.transformer_data `
   --manifest data/processed/smoke-test-manifest.csv.gz
 ```
 
-Do not commit smoke-test results. A full run writes:
+Do not commit smoke-test results. A new scripted full run writes:
 
 - `data/processed/distilbert_cased_seed42/`: tokenized DatasetDict (ignored)
-- `results/transformer_data_preparation.json`: counts, class balance, and train/validation
-  truncation statistics
-- `results/transformer_split_manifest.csv.gz`: source row ID, label, and frozen split assignment
+- `results/scripted_transformer_data_preparation.json`: counts, class balance, and
+  train/validation truncation statistics
+- `results/scripted_transformer_split_manifest.csv.gz`: source row ID, label, and
+  frozen split assignment
 
 ## Full Dataset Outcome
 

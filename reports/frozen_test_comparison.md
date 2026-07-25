@@ -1,5 +1,12 @@
 # Frozen Test Comparison
 
+> **Historical scripted comparison.** The executed notebook is now the
+> canonical Week 2 workflow. Its metrics and comparison are in
+> `results/transformer_test_metrics.csv` and `results/model_comparison.csv`.
+> The earlier three-model per-row predictions are retained only as
+> `results/week3_error_analysis_source_predictions.csv.gz` because the existing
+> Week 3 error analysis depends on them.
+
 ## Evaluation policy
 
 The final configuration was frozen before test evaluation. The test split is used once for
@@ -13,7 +20,7 @@ final output, making an accidental repeated or partial replacement visible.
 
 ## Frozen membership and integrity checks
 
-- Manifest: `results/transformer_split_manifest.csv.gz`
+- Historical manifest: removed after notebook canonicalization
 - Expected SHA-256:
   `16a0ac74326c633f390329c287335518c47fcf4728adc923753a68034adbdd45`
 - Frozen rows: 371,381 train; 46,423 validation; 46,423 test
@@ -63,17 +70,13 @@ was used for checkpoint selection before the test split was evaluated.
 
 No frozen test metric was computed during these checks.
 
-## Final artifacts
+## Retained artifact
 
-The confirmed run creates:
-
-- `results/frozen_test_metrics.csv`: accuracy, label-1 precision, recall, F1, available
-  test loss, runtime, and score semantics for each model.
-- `results/frozen_test_predictions.csv.gz`: source-row ID, true label, predicted labels,
-  Logistic Regression label-1 probability, Linear SVM decision score, and DistilBERT
-  label-1 probability.
-- `results/frozen_test_evaluation.json`: manifest/configuration audit, integrity checks,
-  environment details, timing, and the no-post-test-tuning statement.
+`results/week3_error_analysis_source_predictions.csv.gz` retains the historical
+source-row ID, true label, predicted labels, Logistic Regression probability,
+Linear SVM decision score, and DistilBERT probability required by the existing
+Week 3 analysis. The former scripted aggregate metrics and evaluation audit
+were superseded by the canonical notebook results and removed.
 
 ## Measured results
 
@@ -100,10 +103,11 @@ took 8.403 seconds for Logistic Regression and 10.125 seconds for Linear SVM. Di
 test inference took 279.996 seconds on the NVIDIA GeForce RTX 3060 Laptop GPU. The complete
 guarded run, including raw-source reconstruction and integrity checks, took 630.650 seconds.
 
-The saved predictions were independently reloaded after the run. They contain 46,423
+The retained predictions were independently reloaded after the run. They contain 46,423
 unique source-row IDs, the frozen label counts (28,446 human and 17,977 AI-generated), no
 missing values, and complete predictions/scores for all three models. Recomputed metrics
-and confusion counts match `results/frozen_test_metrics.csv` exactly.
+and confusion counts matched the historical aggregate values reproduced in
+this report.
 
 No tuning occurred after observing these results. In particular, the stronger Linear SVM
 test result does not authorize changes to DistilBERT, its checkpoint, TF-IDF, model

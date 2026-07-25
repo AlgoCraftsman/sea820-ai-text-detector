@@ -19,8 +19,8 @@ from typing import Any, Iterable
 
 DEFAULT_CSV_PATH = Path("data/AI_Human.csv")
 DEFAULT_OUTPUT_DIR = Path("data/processed/distilbert_cased_seed42")
-DEFAULT_RESULTS_PATH = Path("results/transformer_data_preparation.json")
-DEFAULT_MANIFEST_PATH = Path("results/transformer_split_manifest.csv.gz")
+DEFAULT_RESULTS_PATH = Path("results/scripted_transformer_data_preparation.json")
+DEFAULT_MANIFEST_PATH = Path("results/scripted_transformer_split_manifest.csv.gz")
 DEFAULT_CACHE_DIR = Path("data/huggingface-cache")
 DEFAULT_MODEL_NAME = "distilbert/distilbert-base-cased"
 DEFAULT_MAX_LENGTH = 512

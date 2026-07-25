@@ -1,6 +1,11 @@
 # DistilBERT Training Workflow
 
-This Week 2 workflow fine-tunes `distilbert/distilbert-base-cased` for binary sequence
+> **Historical scripted workflow.** The executed
+> `notebooks/transformer_finetuning.ipynb` and
+> `results/hyperparameter_experiments.csv` are now canonical for Week 2. This
+> report is retained to document the earlier cased, 512-token experiments.
+
+This workflow fine-tunes `distilbert/distilbert-base-cased` for binary sequence
 classification. Label `0` means human-written and label `1` means AI-generated. Accuracy,
 precision, recall, and F1 are reported, with label-1 F1 used to choose the best validation
 checkpoint.
@@ -42,8 +47,8 @@ mistaken for a full experiment or an existing checkpoint is overwritten.
 
 Successful runs append their configuration, package/GPU versions, dataset sizes, measured
 runtime, validation metrics, best checkpoint, peak allocated GPU memory, and a rough scaled
-full-run duration estimate to `results/transformer_experiments.csv`. Raw metrics, model
-weights, Trainer state, and checkpoints remain under ignored `checkpoints/`.
+full-run duration estimate to `results/scripted_transformer_experiments.csv`. Raw metrics,
+model weights, Trainer state, and checkpoints remain under ignored `checkpoints/`.
 
 ## Environment verification
 

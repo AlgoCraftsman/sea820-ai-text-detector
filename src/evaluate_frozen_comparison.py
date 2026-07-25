@@ -28,14 +28,14 @@ from sklearn.svm import LinearSVC
 
 
 DEFAULT_CSV_PATH = Path("data/AI_Human.csv")
-DEFAULT_MANIFEST_PATH = Path("results/transformer_split_manifest.csv.gz")
+DEFAULT_MANIFEST_PATH = Path("results/scripted_transformer_split_manifest.csv.gz")
 DEFAULT_PREPARED_DATASET_PATH = Path("data/processed/distilbert_cased_seed42")
 DEFAULT_CHECKPOINT_PATH = Path(
     "checkpoints/distilbert-full-epoch1/checkpoint-23212"
 )
-DEFAULT_METRICS_PATH = Path("results/frozen_test_metrics.csv")
-DEFAULT_PREDICTIONS_PATH = Path("results/frozen_test_predictions.csv.gz")
-DEFAULT_AUDIT_PATH = Path("results/frozen_test_evaluation.json")
+DEFAULT_METRICS_PATH = Path("results/scripted_frozen_test_metrics.csv")
+DEFAULT_PREDICTIONS_PATH = Path("results/scripted_frozen_test_predictions.csv.gz")
+DEFAULT_AUDIT_PATH = Path("results/scripted_frozen_test_evaluation.json")
 DEFAULT_TRANSFORMER_OUTPUT_DIR = Path("runs/frozen-test-evaluation")
 
 EXPECTED_MANIFEST_SHA256 = (
