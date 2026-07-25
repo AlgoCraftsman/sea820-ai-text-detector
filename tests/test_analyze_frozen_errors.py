@@ -1,9 +1,13 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import pandas as pd
 
 from src.analyze_frozen_errors import (
+    _plot_confusion,
+    _plot_truncation_slices,
     assign_word_length_bin,
     classify_opening_style,
     classify_outcomes,
@@ -55,6 +59,54 @@ class FrozenErrorAnalysisHelperTests(unittest.TestCase):
         self.assertEqual(summary["false_negatives"], 1)
         self.assertEqual(summary["accuracy"], 0.5)
         self.assertEqual(summary["f1"], 0.5)
+
+    def test_lab_style_plots_are_written_as_svg(self) -> None:
+        model_summary = pd.DataFrame(
+            [
+                {
+                    "model": model,
+                    "true_negatives": 8,
+                    "false_positives": 2,
+                    "false_negatives": 1,
+                    "true_positives": 9,
+                }
+                for model in ("Logistic Regression", "Linear SVM", "DistilBERT")
+            ]
+        )
+        slice_summary = pd.DataFrame(
+            [
+                {
+                    "model": model,
+                    "slice": "truncation",
+                    "value": value,
+                    "error_rate": rate,
+                }
+                for model in ("Logistic Regression", "Linear SVM", "DistilBERT")
+                for value, rate in (
+                    ("not_truncated", 0.01),
+                    ("truncated", 0.02),
+                )
+            ]
+        )
+
+        with TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            confusion_path = root / "confusion.svg"
+            repeated_confusion_path = root / "confusion-repeated.svg"
+            slice_path = root / "truncation.svg"
+            repeated_slice_path = root / "truncation-repeated.svg"
+            _plot_confusion(model_summary, confusion_path)
+            _plot_confusion(model_summary, repeated_confusion_path)
+            _plot_truncation_slices(slice_summary, slice_path)
+            _plot_truncation_slices(slice_summary, repeated_slice_path)
+
+            self.assertIn("<svg", confusion_path.read_text(encoding="utf-8"))
+            self.assertIn("<svg", slice_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                confusion_path.read_bytes(),
+                repeated_confusion_path.read_bytes(),
+            )
+            self.assertEqual(slice_path.read_bytes(), repeated_slice_path.read_bytes())
 
 
 if __name__ == "__main__":
