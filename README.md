@@ -13,7 +13,8 @@ This project builds and compares two families of models for that classification 
    SVM for comparison.
 2. Transformer: a fine-tuned DistilBERT (Week 2).
 
-The classic baseline establishes the score the Transformer must beat.
+The Week 2 notebook evaluates DistilBERT and Logistic Regression on identical
+held-out test membership.
 
 ## Repository structure
 
@@ -23,7 +24,7 @@ sea820-ai-text-detector/
 │   ├── aiTextClassifier.ipynb          # Week 1: EDA and classic TF-IDF baseline
 │   └── transformer_finetuning.ipynb   # Week 2: Transformer fine-tuning
 ├── data/                               # dataset lands here at runtime (not committed)
-├── src/                                # supporting and legacy scripted workflows
+├── src/                                # Week 3 error-analysis utility
 ├── results/                            # saved metrics and figures
 ├── reports/                            # written reports
 ├── slides/                             # presentation
@@ -113,7 +114,7 @@ roughly 490k texts is the main cost.
 ### Week 2 Transformer workflow
 
 The lab-style [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_finetuning.ipynb)
-is the canonical Week 2 workflow. Run every cell from top to bottom. It loads and cleans the
+is the complete Week 2 workflow. Run every cell from top to bottom. It loads and cleans the
 dataset, creates a stratified 80/10/10 split, compares four configurations on fixed
 development subsets, selects by validation F1, trains the selected uncased DistilBERT
 configuration at 256 tokens on all training rows, and compares it with Logistic Regression
@@ -121,7 +122,7 @@ on identical test membership.
 
 Run B (`5e-5`, batch size `4`, one epoch) was selected with development-subset F1 `0.981982`.
 On the notebook's test split, DistilBERT reached F1 `0.993361` and Logistic Regression
-reached `0.992735`. The canonical outputs are:
+reached `0.992735`. The saved outputs are:
 
 - `results/split_summary.csv`
 - `results/hyperparameter_experiments.csv`
@@ -132,31 +133,6 @@ reached `0.992735`. The canonical outputs are:
 See
 [`reports/week2_transformer_notebook.md`](reports/week2_transformer_notebook.md) for the
 complete run record and validation.
-
-The older modules under `src/` remain as non-canonical reproducibility support. Their
-default result paths use a `scripted_` prefix so rerunning them cannot overwrite the
-canonical notebook outputs. Their historical methodology is retained in
-[`reports/transformer_data_preparation.md`](reports/transformer_data_preparation.md),
-[`reports/transformer_training.md`](reports/transformer_training.md), and
-[`reports/frozen_test_comparison.md`](reports/frozen_test_comparison.md).
-
-### Week 3 error-analysis provenance
-
-The existing Week 3 analysis was produced from the earlier scripted comparison. Its
-per-row source predictions are retained as
-`results/week3_error_analysis_source_predictions.csv.gz`; this file is not a canonical
-Week 2 metric result.
-
-Run the post-evaluation error analysis with:
-
-```powershell
-python -m src.analyze_frozen_errors --overwrite
-```
-
-This verifies the frozen predictions, aligns prepared rows by source ID, measures true
-untruncated token lengths, and saves confusion, model-overlap, length, truncation,
-opening-style, confidence, and compact qualitative-example artifacts. It does not retrain or
-tune any model. See [`reports/error_analysis.md`](reports/error_analysis.md).
 
 ## Current results (Week 1 baseline)
 
@@ -176,8 +152,8 @@ artifacts rather than a robust human-vs-AI signal.
 ## Roadmap
 
 - Week 1, Foundations and classic model: EDA and TF-IDF baseline (`aiTextClassifier.ipynb`). Done.
-- Week 2, Transformer: fine-tune DistilBERT and complete the frozen-test comparison. Done.
-- Week 3, Analysis and reporting: error analysis done; ethical discussion, report, and slides remain.
+- Week 2, Transformer: fine-tune DistilBERT and complete the held-out test comparison. Done.
+- Week 3, Analysis and reporting: ethical discussion, final report, and slides remain.
 
 ## Team
 

@@ -78,47 +78,14 @@ CSV. It verified all 46,423 test source IDs and labels, reproduced both models'
 saved metrics to floating-point precision, and confirmed that the baseline and
 Transformer used the same test membership.
 
-## Comparison with the scripted workflow
-
-Both workflows:
-
-- remove the same four empty rows and 23,004 normalized duplicates;
-- use stratified 80/10/10 splits with seed 42;
-- keep test data out of training and validation-based selection;
-- use dynamic padding and label `1` for the positive-class metrics; and
-- save predictions from which the Transformer metrics can be reproduced.
-
-Important differences prevent a direct score-based ranking:
-
-| Dimension | Scripted workflow | Notebook workflow |
-| --- | --- | --- |
-| Split implementation | Hugging Face `train_test_split` | scikit-learn `train_test_split` |
-| Test membership | Frozen manifest and SHA-256 | Saved test source IDs in predictions |
-| Shared test rows | 4,631 of 46,423 | 4,631 of 46,423 |
-| Base model | cased DistilBERT | uncased DistilBERT |
-| Maximum length | 512 tokens | 256 tokens |
-| Training comparison | smoke, development, and full runs | four controlled one-factor runs |
-| Audit controls | manifests, hashes, overwrite guards, environment metadata | explanatory notebook and result tables |
-
-The scripted test metrics were higher, but that does not establish greater
-accuracy because model variants, token limits, and 41,792 of the test rows
-differ. The notebook aligns more directly with the course-lab experiment
-format, while the scripted workflow provides stronger artifact integrity and
-reproducibility controls.
-
-The notebook satisfies every Week 2 task in the project brief and is now the
-canonical Week 2 workflow. Its result files are:
+The notebook satisfies every Week 2 task in the project brief. Its result files
+are:
 
 - `results/split_summary.csv`
 - `results/hyperparameter_experiments.csv`
 - `results/transformer_test_metrics.csv`
 - `results/transformer_test_predictions.csv.gz`
 - `results/model_comparison.csv`
-
-The superseded scripted summary, experiment log, split manifest, aggregate
-metrics, and evaluation-audit files were removed. The earlier per-row
-prediction file was retained under a Week 3-specific name because the existing
-error analysis depends on its three-model columns and original checkpoint.
 
 ## Operational notes
 
@@ -133,13 +100,3 @@ length, batch size, or hyperparameters.
 
 Model checkpoints and temporary caches remain under ignored `checkpoints/`
 and `runs/` directories.
-
-## Week 3 dependency
-
-`src/analyze_frozen_errors.py` continues to match the scripted workflow's cased
-checkpoint, 512-token configuration, and three-model prediction columns. Its
-input is retained as
-`results/week3_error_analysis_source_predictions.csv.gz`. If a later Week 3
-notebook analyzes the canonical notebook predictions instead, it must
-deliberately update the expected columns, token length, model variant, and
-integrity checks.
