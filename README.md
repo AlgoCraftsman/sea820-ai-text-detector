@@ -161,6 +161,24 @@ occurred after the final test evaluation. See
 [`reports/transformer_training.md`](reports/transformer_training.md) and
 `results/transformer_experiments.csv` for the complete settings and caveats.
 
+### Week 2 notebook experiment
+
+The lab-style [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_finetuning.ipynb)
+has also been executed and validated. It compares four controlled configurations on fixed
+development subsets, selects by validation F1, trains the selected uncased DistilBERT
+configuration at 256 tokens on all training rows, and compares it with Logistic Regression
+on identical test membership.
+
+Run B (`5e-5`, batch size `4`, one epoch) was selected with development-subset F1 `0.981982`.
+On the notebook's test split, DistilBERT reached F1 `0.993361` and Logistic Regression
+reached `0.992735`. This notebook uses a different split implementation, test membership,
+model variant, and token limit from the guarded scripted workflow, so the scores are not
+directly rankable. The notebook artifacts are retained as a parallel experiment; the
+existing frozen files remain canonical because they provide stronger manifests, hashes,
+and overwrite controls. See
+[`reports/week2_transformer_notebook.md`](reports/week2_transformer_notebook.md) for the
+complete run record and validation.
+
 ### Frozen final comparison
 
 The final evaluator is guarded so its default invocation performs preflight checks without
