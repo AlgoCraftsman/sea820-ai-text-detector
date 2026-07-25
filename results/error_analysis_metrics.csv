@@ -1,0 +1,2 @@
+model,accuracy,precision,recall,f1,true_negatives,false_positives,false_negatives,true_positives,total_errors,error_rate,median_incorrect_class_probability,errors_at_least_0_90_confident,errors_at_least_0_99_confident
+Fine-tuned DistilBERT,0.9948732309415591,0.9962511190689346,0.9904873164218959,0.9933608569515733,28380,67,171,17805,238,0.005126769058440859,0.99766093825,217,192
