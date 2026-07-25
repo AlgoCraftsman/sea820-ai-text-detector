@@ -4,16 +4,26 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import html
 import json
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+import matplotlib
+
+matplotlib.use("Agg")
+matplotlib.rcParams["svg.hashsalt"] = "sea820"
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from matplotlib.ticker import PercentFormatter
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    accuracy_score,
+    precision_recall_fscore_support,
+)
 
 
 DEFAULT_PREDICTIONS_PATH = Path("results/frozen_test_predictions.csv.gz")
@@ -400,137 +410,64 @@ def _write_dataframe(frame: pd.DataFrame, path: Path) -> None:
 
 
 def _plot_confusion(model_summary: pd.DataFrame, path: Path) -> None:
-    width, height = 1120, 390
-    body = [
-        '<rect width="100%" height="100%" fill="white"/>',
-        '<text x="560" y="35" text-anchor="middle" font-size="24" '
-        'font-family="Arial" font-weight="bold">Frozen-test confusion matrices</text>',
-    ]
-    panel_width = 360
-    for panel, row in enumerate(model_summary.to_dict("records")):
+    """Plot one lab-style confusion matrix for each frozen model."""
+
+    rows = model_summary.to_dict("records")
+    figure, axes = plt.subplots(1, len(rows), figsize=(11.2, 3.9))
+    axes = np.atleast_1d(axes)
+    for axis, row in zip(axes, rows):
         matrix = np.asarray(
             [
                 [row["true_negatives"], row["false_positives"]],
                 [row["false_negatives"], row["true_positives"]],
             ]
         )
-        origin_x = 55 + panel * panel_width
-        origin_y = 105
-        cell_size = 115
-        maximum = float(matrix.max())
-        model = html.escape(str(row["model"]))
-        body.append(
-            f'<text x="{origin_x + cell_size}" y="72" text-anchor="middle" '
-            f'font-size="18" font-family="Arial" font-weight="bold">{model}</text>'
+        display = ConfusionMatrixDisplay(
+            confusion_matrix=matrix,
+            display_labels=["Human", "AI"],
         )
-        for (y, x), value in np.ndenumerate(matrix):
-            intensity = 0.18 + 0.68 * (float(value) / maximum if maximum else 0.0)
-            blue = int(255 - 115 * intensity)
-            fill = f"rgb({blue},{blue + 25},{255})"
-            cell_x = origin_x + x * cell_size
-            cell_y = origin_y + y * cell_size
-            body.extend(
-                [
-                    f'<rect x="{cell_x}" y="{cell_y}" width="{cell_size}" '
-                    f'height="{cell_size}" fill="{fill}" stroke="#4b5563"/>',
-                    f'<text x="{cell_x + cell_size / 2}" '
-                    f'y="{cell_y + cell_size / 2 + 7}" text-anchor="middle" '
-                    f'font-size="19" font-family="Arial">{int(value):,}</text>',
-                ]
-            )
-        body.extend(
-            [
-                f'<text x="{origin_x + cell_size / 2}" y="{origin_y - 12}" '
-                'text-anchor="middle" font-size="14" font-family="Arial">Human</text>',
-                f'<text x="{origin_x + 1.5 * cell_size}" y="{origin_y - 12}" '
-                'text-anchor="middle" font-size="14" font-family="Arial">AI</text>',
-                f'<text x="{origin_x - 10}" y="{origin_y + cell_size / 2 + 5}" '
-                'text-anchor="end" font-size="14" font-family="Arial">Human</text>',
-                f'<text x="{origin_x - 10}" y="{origin_y + 1.5 * cell_size + 5}" '
-                'text-anchor="end" font-size="14" font-family="Arial">AI</text>',
-                f'<text x="{origin_x + cell_size}" y="{origin_y + 2 * cell_size + 35}" '
-                'text-anchor="middle" font-size="14" font-family="Arial">Predicted label</text>',
-            ]
-        )
+        display.plot(ax=axis, cmap="Blues", colorbar=False, values_format=",d")
+        axis.set_title(str(row["model"]))
+
+    figure.suptitle("Frozen-test confusion matrices")
+    figure.tight_layout(rect=(0, 0, 1, 0.93))
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
-        f'viewBox="0 0 {width} {height}">' + "".join(body) + "</svg>\n",
-        encoding="utf-8",
-    )
+    figure.savefig(path, format="svg", metadata={"Date": None})
+    plt.close(figure)
 
 
 def _plot_truncation_slices(slice_summary: pd.DataFrame, path: Path) -> None:
+    """Plot frozen-model error rates with the lab's pandas/Matplotlib workflow."""
+
     selected = slice_summary.loc[slice_summary["slice"] == "truncation"].copy()
     order = ["not_truncated", "truncated"]
-    models = list(MODEL_SPECS)
-    values_by_slice = {
-        value: (
-            selected.loc[selected["value"] == value]
-            .set_index("model")
-            .loc[models, "error_rate"]
-            .to_numpy()
-        )
-        for value in order
-    }
-    maximum = max(float(values.max()) for values in values_by_slice.values())
-    chart_max = maximum * 1.18 if maximum else 1.0
-    svg_width, svg_height = 900, 500
-    chart_left, chart_top, chart_width, chart_height = 85, 80, 760, 330
-    colors = {"not_truncated": "#7aa6c2", "truncated": "#d97757"}
-    body = [
-        '<rect width="100%" height="100%" fill="white"/>',
-        '<text x="450" y="35" text-anchor="middle" font-size="23" '
-        'font-family="Arial" font-weight="bold">Frozen-test error rate by 512-token truncation</text>',
-    ]
-    for tick in range(6):
-        rate = chart_max * tick / 5
-        y = chart_top + chart_height - chart_height * rate / chart_max
-        body.extend(
-            [
-                f'<line x1="{chart_left}" y1="{y}" x2="{chart_left + chart_width}" '
-                'y2="{y}" stroke="#d1d5db" stroke-width="1"/>',
-                f'<text x="{chart_left - 10}" y="{y + 5}" text-anchor="end" '
-                f'font-size="12" font-family="Arial">{rate:.3%}</text>',
-            ]
-        )
-    group_width = chart_width / len(models)
-    bar_width = 62
-    for model_index, model in enumerate(models):
-        center = chart_left + group_width * (model_index + 0.5)
-        for slice_index, value in enumerate(order):
-            rate = float(values_by_slice[value][model_index])
-            bar_height = chart_height * rate / chart_max
-            x = center + (slice_index - 0.5) * (bar_width + 10) - bar_width / 2
-            y = chart_top + chart_height - bar_height
-            body.extend(
-                [
-                    f'<rect x="{x}" y="{y}" width="{bar_width}" height="{bar_height}" '
-                    f'fill="{colors[value]}"/>',
-                    f'<text x="{x + bar_width / 2}" y="{max(chart_top + 12, y - 6)}" '
-                    f'text-anchor="middle" font-size="12" font-family="Arial">{rate:.3%}</text>',
-                ]
-            )
-        body.append(
-            f'<text x="{center}" y="{chart_top + chart_height + 30}" '
-            f'text-anchor="middle" font-size="14" font-family="Arial">{html.escape(model)}</text>'
-        )
-    for index, value in enumerate(order):
-        legend_x = 300 + index * 220
-        body.extend(
-            [
-                f'<rect x="{legend_x}" y="455" width="18" height="18" '
-                f'fill="{colors[value]}"/>',
-                f'<text x="{legend_x + 26}" y="469" font-size="14" '
-                f'font-family="Arial">{value.replace("_", " ")}</text>',
-            ]
-        )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{svg_width}" height="{svg_height}" '
-        f'viewBox="0 0 {svg_width} {svg_height}">' + "".join(body) + "</svg>\n",
-        encoding="utf-8",
+    selected["value"] = pd.Categorical(selected["value"], categories=order, ordered=True)
+    rates = (
+        selected.pivot(index="model", columns="value", values="error_rate")
+        .reindex(list(MODEL_SPECS))
+        .reindex(columns=order)
     )
+    axis = rates.plot.bar(
+        figsize=(9, 5),
+        color=["#7aa6c2", "#d97757"],
+        rot=0,
+    )
+    axis.set_title("Frozen-test error rate by 512-token truncation")
+    axis.set_xlabel("")
+    axis.set_ylabel("Error rate")
+    axis.yaxis.set_major_formatter(PercentFormatter(1.0))
+    axis.legend([value.replace("_", " ") for value in order])
+    maximum = float(rates.to_numpy().max())
+    axis.set_ylim(0, maximum * 1.18 if maximum else 1.0)
+    for container in axis.containers:
+        labels = [f"{value:.3%}" for value in container.datavalues]
+        axis.bar_label(container, labels=labels, padding=3)
+
+    figure = axis.get_figure()
+    figure.tight_layout()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    figure.savefig(path, format="svg", metadata={"Date": None})
+    plt.close(figure)
 
 
 def _parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
