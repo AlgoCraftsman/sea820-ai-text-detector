@@ -1,172 +1,196 @@
-# Frozen-Test Error Analysis
+# Error Analysis of the Selected DistilBERT
 
 ## Scope and safeguards
 
-This analysis uses the final predictions saved after the model configuration and frozen-test
-comparison were complete. It does not change preprocessing, model parameters, thresholds,
-checkpoint selection, or reported test metrics. The input prediction artifact is verified by
-SHA-256 before analysis:
+This analysis examines the held-out predictions exported by
+`notebooks/transformer_finetuning.ipynb`. It uses the selected uncased
+DistilBERT, its 256-token limit, and the exact 46,423-row test membership used
+for the reported Week 2 metrics. The prediction artifact is verified by
+SHA-256, and every `source_row_id` and label is aligned with the original CSV
+before analysis.
 
-`11b6e98055bd0aeef177c5202b2478c3dc7c689218a2e66afb70853e1e413422`
+No model, threshold, preprocessing rule, or checkpoint was changed. Topic
+discovery uses TF-IDF and eight-component non-negative matrix factorization
+(NMF) across all held-out texts. It does not use labels, predictions, or error
+outcomes, so the topic categories were not chosen to make the errors look more
+systematic.
 
-Prepared test rows are aligned to predictions by the original `source_row_id`, and their
-labels must match. Untruncated DistilBERT token lengths are measured locally so rows that
-actually exceed the 512-token limit can be analyzed separately. Compact 500-character
-excerpts are saved only for rows misclassified by at least one model.
+## Overall mistakes
 
-## Overall errors
-
-| Model | False positives | False negatives | Total errors | Error rate |
-| --- | ---: | ---: | ---: | ---: |
-| Linear SVM | 5 | 14 | 19 | 0.0409% |
-| DistilBERT | 29 | 21 | 50 | 0.1077% |
-| Logistic Regression | 36 | 153 | 189 | 0.4071% |
-
-![Frozen-test confusion matrices](../results/figures/frozen_confusion_matrices.svg)
-
-Only 223 of 46,423 test rows were misclassified by any model. Error overlap was limited:
-
-| Models wrong on row | Rows |
+| Outcome | Rows |
 | --- | ---: |
-| Logistic Regression only | 165 |
-| DistilBERT only | 27 |
-| Logistic Regression + DistilBERT | 12 |
-| All three models | 8 |
-| Linear SVM only | 4 |
-| Logistic Regression + Linear SVM | 4 |
-| Linear SVM + DistilBERT | 3 |
+| True negatives | 28,380 |
+| False positives | 67 |
+| False negatives | 171 |
+| True positives | 17,805 |
+| Total errors | 238 |
 
-The small eight-row intersection shows that the models do not simply fail on one common
-hard subset. Linear SVM made the fewest errors, and 15 of its 19 errors were also made by at
-least one other model.
+![DistilBERT held-out confusion matrix](../results/figures/error_confusion_matrix.svg)
 
-## Class-specific behavior
+The model achieved accuracy `0.994873`, precision `0.996251`, recall
+`0.990487`, and F1 `0.993361`, matching the Week 2 result exactly. Errors were
+asymmetric: false negatives outnumbered false positives by about 2.55 to 1.
+The AI-generated class had an error rate of `0.9513%`, compared with `0.2355%`
+for human-written rows. In this test set, the model was more likely to miss an
+AI-generated essay than to flag a human essay incorrectly.
 
-Logistic Regression was much more likely to miss AI-generated rows than to flag human rows:
-its AI-class error rate was 0.8511%, compared with 0.1266% for human text. Linear SVM showed
-the same direction at much lower rates (0.0779% versus 0.0176%). DistilBERT was more balanced,
-with error rates of 0.1168% for AI-generated text and 0.1019% for human text.
+The mistakes were usually confident. The median probability assigned to the
+incorrect predicted class was `0.997661`; 217 of 238 errors (`91.2%`) were at
+least 0.90 confident, and 192 (`80.7%`) were at least 0.99 confident. A high
+DistilBERT probability therefore should not be interpreted as reliable proof
+of authorship.
 
-This distinction matters operationally. Logistic Regression's high overall precision hides
-the fact that most of its residual errors are false negatives. DistilBERT has 132 fewer
-false negatives than Logistic Regression, but 24 more false positives than Linear SVM.
+## Text length and truncation
 
-## Length and truncation
+| Word count | Support | Errors | Error rate | FP | FN |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0-100 | 127 | 0 | 0.0000% | 0 | 0 |
+| 101-250 | 8,004 | 61 | 0.7621% | 12 | 49 |
+| 251-500 | 28,572 | 137 | 0.4795% | 21 | 116 |
+| 501-750 | 7,791 | 33 | 0.4236% | 27 | 6 |
+| 751+ | 1,929 | 7 | 0.3629% | 7 | 0 |
 
-The test split contains 15,600 rows (33.604%) whose untruncated token length exceeds 512.
-This closely matches the training and validation truncation fractions and confirms that
-context loss is a material architectural limitation.
+![Error rate by word-count bin](../results/figures/error_rate_by_length.svg)
 
-However, errors were not concentrated in truncated rows:
+The very shortest bin contained only 127 examples and no errors, so it does not
+support the claim that extremely short text is consistently difficult.
+Moderately short essays of 101-250 words were the hardest length group, with an
+error rate about 1.59 times the 251-500-word rate. Their errors were primarily
+false negatives.
 
-| Model | Non-truncated error rate | Truncated error rate | Truncated errors |
-| --- | ---: | ---: | ---: |
-| Logistic Regression | 0.4964% | 0.2308% | 36 |
-| Linear SVM | 0.0487% | 0.0256% | 4 |
-| DistilBERT | 0.1233% | 0.0769% | 12 |
+Longer groups had lower total error rates but a different error mix. All seven
+errors above 750 words were false positives, and 27 of 33 errors between 501
+and 750 words were false positives. A plausible explanation is that long,
+well-structured human essays can resemble the organization and fluency the
+model associates with generated prose, while only the first 256 tokens are
+available to the classifier.
 
-![Error rate by truncation status](../results/figures/frozen_error_rate_by_truncation.svg)
+The tokenizer found that 41,309 test rows (`88.98%`) exceeded 256 tokens.
+Truncated rows had a `0.5011%` error rate, compared with `0.6062%` for
+non-truncated rows. This descriptive result does not show that truncation
+helps: text length, label balance, topic, and writing style differ between the
+groups. It does show that truncation alone does not explain most mistakes.
 
-These are descriptive slice results, not evidence that truncation improves prediction.
-Text length, label prevalence, topic, and generator characteristics may differ between the
-slices. DistilBERT's truncated-slice F1 was slightly lower (0.998388 versus 0.998668) even
-though its raw error rate was lower. The correct conclusion is that truncation did not drive
-most observed errors on this dataset, while the model still cannot use text beyond its first
-512 tokens.
+## Writing style
 
-Very short text was a clearer problem for the classic models. Among the 155 rows with at
-most 100 words, Logistic Regression made 8 errors (5.1613%) and Linear SVM made 1 (0.6452%);
-DistilBERT made none. The single SVM error was a nine-word AI-labeled subject line
-(`source_row_id=80931`), which provides very little lexical evidence for a TF-IDF classifier.
-Because this slice is small, its rate should be reported with its support rather than treated
-as a stable population estimate.
+| Opening style | Support | Errors | Error rate | FP | FN |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Opening question | 4,859 | 35 | 0.7203% | 5 | 30 |
+| Other | 36,532 | 191 | 0.5228% | 61 | 130 |
+| Salutation | 5,032 | 12 | 0.2385% | 1 | 11 |
 
-## Opening style and formulaic essays
+Essays opening with a question had the highest error rate, about 1.38 times the
+rate for other openings. Thirty of their 35 errors were false negatives.
+Rhetorical questions and direct-address school essays occur in both labels, so
+they provide weak authorship evidence even though they are recurring stylistic
+cues.
 
-Opening style was assigned descriptively before aggregation: a salutation, a question mark
-within the first 150 normalized characters, or other. Opening-question rows were harder for
-every model:
+Manual inspection also found spelling errors, character substitutions,
+informal phrasing, repeated claims, and rigid multi-reason essay structures in
+both false positives and false negatives. The overlap suggests that the model
+has learned dataset-specific style and prompt patterns that do not map cleanly
+to human versus AI authorship.
 
-| Model | Opening-question error rate | Other-opening error rate | Ratio |
-| --- | ---: | ---: | ---: |
-| Logistic Regression | 0.8237% | 0.3691% | 2.23× |
-| Linear SVM | 0.1236% | 0.0328% | 3.77× |
-| DistilBERT | 0.2883% | 0.0902% | 3.20× |
+## Topic patterns
 
-Qualitative review supports a cautious interpretation: both classes contain formulaic school
-essays using rhetorical questions, direct address, repeated reasons, and principal-facing
-prompts. DistilBERT false positives include human-labeled essays beginning with constructions
-such as “Dear Principal” or “Have you ever...,” while several Logistic Regression false
-negatives are AI-labeled texts written in personal, error-filled student-essay prose. The
-models appear to rely partly on style and prompt-family cues that occur in both labels.
+The NMF topics are descriptive groups identified by their highest-weight
+terms. They are not manually assigned ground-truth topics.
 
-## Confidence and disagreement
+| Topic | Interpretation from top terms | Support | Errors | Error rate | FP | FN |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Topic 1 | General opinion and personal reasoning | 8,661 | 89 | 1.0276% | 29 | 60 |
+| Topic 5 | School, students, classes, and teachers | 13,729 | 80 | 0.5827% | 24 | 56 |
+| Topic 7 | Driving, driverless cars, and phones | 5,168 | 23 | 0.4450% | 3 | 20 |
+| Topic 6 | Technology, coding, facial expressions | 3,084 | 9 | 0.2918% | 1 | 8 |
+| Topic 4 | Venus and planetary exploration | 2,543 | 7 | 0.2753% | 2 | 5 |
+| Topic 3 | Car use, transportation, and pollution | 5,782 | 15 | 0.2594% | 7 | 8 |
+| Topic 8 | Mars, the "face," and landforms | 2,339 | 6 | 0.2565% | 1 | 5 |
+| Topic 2 | Electoral College and voting | 5,117 | 9 | 0.1759% | 0 | 9 |
 
-DistilBERT was frequently confident when wrong. Its median probability assigned to the
-incorrect predicted class was 0.995132; 44 of 50 errors were at least 0.90 confident and 28
-were at least 0.99 confident. Logistic Regression's median wrong-class confidence was
-0.672666, with 33 of 189 errors at least 0.90 and only one at least 0.99. Linear SVM scores
-are uncalibrated decision margins and should not be compared directly with probabilities;
-its median absolute margin on errors was 0.141564.
+![Error rate by unsupervised topic](../results/figures/error_rate_by_topic.svg)
 
-High confidence on these in-distribution errors is a warning against treating the
-DistilBERT probability as a reliable real-world certainty estimate. Calibration was not a
-preselected project objective and must not be tuned on this frozen test set.
+General-opinion essays had the highest topic error rate, about twice the
+overall `0.5127%` rate. Their broad vocabulary and varied personal arguments
+make them a heterogeneous group with fewer topic-specific cues. School essays
+produced the second-most elevated rate and 80 errors. Together, the
+general-opinion and school topics account for 169 of 238 errors (`71.0%`).
+These are also the two largest topics, so both support and rate should be
+reported rather than raw error count alone.
 
-## Related-text families
+The topic result is evidence of association, not causation. Topic vocabulary
+may be entangled with prompt family, generator, text length, corruption style,
+or class prevalence.
 
-Manual review found visibly near-parallel essay families among the errors. Examples include
-human-labeled school-lunch and outdoor-activity essays with character substitutions, and
-AI-labeled decision-making essays with nearly identical structure and wording. Some members
-of these families receive the same error from multiple models.
+## Representative false positives
 
-The preparation workflow removed exact duplicates after lowercasing, URL removal, and
-whitespace normalization. It was not designed to remove semantic paraphrases or
-character-level perturbations. The reviewed examples establish that related text families
-exist within the test errors; they do **not** by themselves prove that a related training
-example crossed the split boundary. A future robustness study should use near-duplicate or
-prompt-family grouping before splitting and then retrain from scratch on that new split.
-That study would be a new experiment, not a revision of the frozen test result.
+A false positive is a human-labeled row predicted as AI-generated.
 
-## Limitations and implications
+| Source row | Incorrect-class confidence | Short excerpt | Hypothesis |
+| ---: | ---: | --- | --- |
+| 9615 | 0.999990 | "Summary The 'Face on Mars' was found during a search..." | The encyclopedic summary format and familiar Mars-prompt vocabulary resemble generated explanatory prose. |
+| 62511 | 0.999966 | "Dear TEACHER_NAME HEY IM SORRY... but i don't agree..." | Despite informal spelling and punctuation, the direct-address school prompt and repeated reasons may dominate the model's decision. |
+| 264816 | 0.999968 | "In the life today, education is important for people..." | The essay combines a formulaic education argument with extensive word corruption, a pattern that may resemble synthetic or transformed training examples. |
 
-- Near-ceiling performance, especially from TF-IDF + Linear SVM, likely reflects strong
-  dataset, prompt, or generator artifacts. It is not evidence that general AI-text detection
-  is solved.
-- The evaluation covers one deduplicated dataset and one frozen random split. It does not
-  test unseen generators, newer model families, editing by humans, mixed-authorship text,
-  other genres, or distribution shift.
-- DistilBERT discards content after 512 tokens for 33.604% of test examples. Its strong score
-  cannot show that omitted later content was irrelevant outside this dataset.
-- DistilBERT's high-confidence errors show that confidence is not a sufficient safeguard.
-- Dataset labels are treated as ground truth for this project. Error analysis cannot
-  independently verify authorship or resolve possible labeling ambiguity.
-- The qualitative categories are exploratory summaries of frozen errors. They were not
-  prespecified hypothesis tests and should not be presented as causal findings.
-- No thresholds, models, or preprocessing steps were changed after test evaluation.
+These cases show that grammatical errors do not reliably protect human text
+from being flagged. Topic, prompt structure, and organization can outweigh
+surface-level human imperfections.
 
-These limitations support a human-in-the-loop interpretation. A detector score could guide
-review or research, but it should not be used alone to accuse a student, impose discipline,
-or claim authorship. The final report should lead with the frozen comparison while making
-its narrow dataset scope equally prominent.
+## Representative false negatives
 
-## Reusable outputs
+A false negative is an AI-labeled row predicted as human-written.
 
-- `results/frozen_error_analysis_by_model.csv`: metrics, confusion counts, and error-score
-  strength summaries.
-- `results/frozen_error_analysis_slices.csv`: fixed truncation, word-length, label, and
-  opening-style slices with support and error rates.
-- `results/frozen_error_overlap.csv`: mutually exclusive model-error intersections.
-- `results/frozen_error_examples.csv.gz`: 223 unique error rows with compact excerpts and
-  all model outcomes/scores.
-- `results/frozen_error_analysis.json`: input hash, alignment policy, truncation count, and
-  output manifest.
+| Source row | Incorrect-class confidence | Short excerpt | Hypothesis |
+| ---: | ---: | --- | --- |
+| 237649 | 0.999986 | "Dear state senator, I want to talk about how we elect the president." | The simple student voice, direct address, and spelling substitutions make the generated essay resemble an authentic classroom response. |
+| 151905 | 0.999985 | "Last MMK, I had a math test on my first period." | A personal anecdote plus numerous character substitutions provides strong human-like noise. |
+| 161325 | 0.999985 | "Do you even Wonder how school would be like if you could pick..." | Rhetorical questioning, repetition, and student-level errors imitate the style of human school essays. |
 
-Run the reproducible analysis with:
+The test set contains visibly near-parallel variants of some false-negative
+essays. For example, rows 237649 and 89430 share the same Electoral College
+letter structure, while rows 161325 and 131400 share the same elective-class
+argument with different character substitutions. This does not prove train-test
+leakage, but it suggests that prompt families and text perturbations are
+important dataset characteristics. Exact duplicate removal cannot eliminate
+semantic near-duplicates or mechanically altered variants.
+
+## Why the model fails
+
+The evidence supports four cautious hypotheses:
+
+1. **Prompt and topic cues overlap across labels.** School letters, rhetorical
+   questions, and formulaic arguments occur in both human and AI-labeled rows.
+2. **Artificial-looking corruption weakens authorship cues.** Character
+   substitutions and spelling noise can make AI text look human and human text
+   look transformed.
+3. **The model relies on dataset-specific regularities.** Very high confidence
+   on wrong predictions indicates that it has learned strong but imperfect
+   correlations rather than a general test of authorship.
+4. **Near-parallel text families complicate random splitting.** Exact
+   de-duplication does not group paraphrases, prompt siblings, or corrupted
+   variants before splitting.
+
+These are descriptive hypotheses from one held-out dataset. Testing them
+causally would require a new experiment with prompt-family grouping,
+near-duplicate detection, and evaluation on unseen generators and genres.
+
+## Reproducible outputs
+
+- `results/error_analysis_metrics.csv`: overall metrics, confusion counts, and
+  confidence summaries.
+- `results/error_analysis_slices.csv`: length, truncation, label, opening-style,
+  and topic slices.
+- `results/error_analysis_topics.csv`: topic support, terms, and error rates.
+- `results/error_analysis_topic_terms.csv`: ranked NMF terms and weights.
+- `results/error_examples.csv.gz`: all 238 false-positive and false-negative
+  rows with compact excerpts.
+- `results/error_analysis_summary.json`: input hash, model configuration,
+  safeguards, and output manifest.
+
+Run the complete analysis after executing the Week 2 notebook:
 
 ```powershell
-python -m src.analyze_frozen_errors --overwrite
+python -m src.analyze_errors --overwrite
 ```
 
-The explicit flag is required because the verified outputs are version-controlled and the
-workflow stages a complete replacement before changing them.
+The explicit flag is required only when replacing an existing complete result
+set.

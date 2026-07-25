@@ -1,0 +1,44 @@
+{
+  "status": "completed",
+  "created_at_utc": "2026-07-25T20:06:39.823327+00:00",
+  "model": "distilbert-base-uncased",
+  "predictions_path": "results/transformer_test_predictions.csv.gz",
+  "predictions_sha256": "9fdcb0c14e18e4182343c6fecaca140a696be8df6ab9cbd8a592d4fea2435031",
+  "source_csv_path": "data/AI_Human.csv",
+  "tokenizer_path": "checkpoints/week2-distilbert-final",
+  "test_rows": 46423,
+  "label_counts": {
+    "0": 28447,
+    "1": 17976
+  },
+  "max_length": 256,
+  "truncated_rows": 41309,
+  "truncated_fraction": 0.8898390883829136,
+  "false_positives": 67,
+  "false_negatives": 171,
+  "total_errors": 238,
+  "topic_method": {
+    "algorithm": "TF-IDF plus non-negative matrix factorization",
+    "topics": 8,
+    "maximum_features": 8000,
+    "minimum_document_frequency": 20,
+    "random_seed": 42,
+    "uses_labels_or_predictions": false
+  },
+  "outputs": {
+    "metrics": "results/error_analysis_metrics.csv",
+    "slices": "results/error_analysis_slices.csv",
+    "topics": "results/error_analysis_topics.csv",
+    "topic_terms": "results/error_analysis_topic_terms.csv",
+    "error_examples": "results/error_examples.csv.gz",
+    "confusion_figure": "results/figures/error_confusion_matrix.svg",
+    "length_figure": "results/figures/error_rate_by_length.svg",
+    "topic_figure": "results/figures/error_rate_by_topic.svg"
+  },
+  "policy": {
+    "model_or_threshold_changed": false,
+    "test_used_for_training_or_selection": false,
+    "topic_model_uses_labels_or_error_outcomes": false,
+    "text_storage": "750-character excerpts for misclassified rows only"
+  }
+}

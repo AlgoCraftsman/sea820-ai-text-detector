@@ -134,6 +134,22 @@ See
 [`reports/week2_transformer_notebook.md`](reports/week2_transformer_notebook.md) for the
 complete run record and validation.
 
+### Week 3 error analysis
+
+After running the Week 2 notebook, analyze the selected DistilBERT's held-out
+mistakes with:
+
+```powershell
+python -m src.analyze_errors --overwrite
+```
+
+The workflow verifies and aligns the saved predictions, identifies every false
+positive and false negative, measures error patterns by length, 256-token
+truncation, opening style, and label-blind NMF topic, saves representative
+examples, and creates three figures. See
+[`reports/error_analysis.md`](reports/error_analysis.md) for the findings and
+failure hypotheses.
+
 ## Current results (Week 1 baseline)
 
 Test set: 20% stratified hold-out (about 93k texts), after de-duplicating on the cleaned text.
@@ -153,7 +169,8 @@ artifacts rather than a robust human-vs-AI signal.
 
 - Week 1, Foundations and classic model: EDA and TF-IDF baseline (`aiTextClassifier.ipynb`). Done.
 - Week 2, Transformer: fine-tune DistilBERT and complete the held-out test comparison. Done.
-- Week 3, Analysis and reporting: ethical discussion, final report, and slides remain.
+- Week 3, Analysis and reporting: current-model error analysis done; ethical discussion,
+  final report, and slides remain.
 
 ## Team
 
