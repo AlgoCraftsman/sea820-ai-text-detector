@@ -13,19 +13,21 @@ This project builds and compares two families of models for that classification 
    SVM for comparison.
 2. Transformer: a fine-tuned DistilBERT (Week 2).
 
-The classic baseline establishes the score the Transformer must beat.
+The Week 2 notebook evaluates DistilBERT and Logistic Regression on identical
+held-out test membership.
 
 ## Repository structure
 
 ```
 sea820-ai-text-detector/
 ├── notebooks/
-│   └── aiTextClassifier.ipynb   # Week 1: EDA and classic TF-IDF baseline (this deliverable)
-├── data/                        # dataset lands here at runtime (not committed, too large)
-├── src/                         # shared preprocessing and training code
-├── results/                     # saved metrics and figures
-├── reports/                     # written report
-├── slides/                      # presentation
+│   ├── aiTextClassifier.ipynb          # Week 1: EDA and classic TF-IDF baseline
+│   └── transformer_finetuning.ipynb   # Week 2: Transformer fine-tuning
+├── data/                               # dataset lands here at runtime (not committed)
+├── src/                                # Week 3 error-analysis utility
+├── results/                            # saved metrics and figures
+├── reports/                            # written reports
+├── slides/                             # presentation
 └── README.md
 ```
 
@@ -106,101 +108,31 @@ Open the notebook and run all cells. Top to bottom it will:
 6. Train and evaluate three classic classifiers.
 7. Produce the comparison table and inspect the most indicative tokens.
 
-Prepare the deterministic Week 2 Hugging Face DatasetDict with:
-
-```bash
-python -m src.transformer_data
-```
-
-This command creates a stratified 80/10/10 split with seed 42, measures 512-token
-truncation only on training/validation data, tokenizes with DistilBERT without static
-padding, and saves the prepared DatasetDict under ignored `data/processed/`. The test split
-is reserved for the final model comparison, and its membership is frozen in the compressed
-`results/transformer_split_manifest.csv.gz` file. See
-[`reports/transformer_data_preparation.md`](reports/transformer_data_preparation.md) for the
-full policy and smoke-test command.
-
-Run the first validation-only training smoke test with:
-
-```powershell
-python -m src.train_transformer `
-  --run-name distilbert-smoke-256-128 `
-  --output-dir checkpoints/distilbert-smoke-256-128 `
-  --train-subset-size 256 `
-  --validation-subset-size 128 `
-  --epochs 1 `
-  --train-batch-size 4 `
-  --eval-batch-size 4 `
-  --gradient-accumulation-steps 4 `
-  --gradient-checkpointing
-```
-
-The command loads only the prepared `train` and `validation` splits into `Trainer`, uses
-dynamic padding, selects checkpoints by F1 for label 1 (AI-generated), and appends measured
-metadata to `results/transformer_experiments.csv`. Checkpoints and raw Trainer output stay
-under ignored `checkpoints/`. An unbounded all-row run additionally requires
-`--confirm-full-run`; review the smoke-run duration estimate before using it. See
-[`reports/transformer_training.md`](reports/transformer_training.md) for the policy and
-configuration details.
-
 Full execution takes about 5 to 8 minutes on Colab or a typical laptop. The TF-IDF step over
 roughly 490k texts is the main cost.
 
-### Transformer development status
+### Week 2 Transformer workflow
 
-The first full DistilBERT epoch trained on all 371,381 prepared training examples and
-evaluated all 46,423 validation examples. It reached validation accuracy `0.9993` and F1
-`0.9991` for the AI-generated class in approximately 2.28 hours on the RTX 3060. The frozen
-test set was not used, so this is the full-validation result rather than the final test
-score.
+The lab-style [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_finetuning.ipynb)
+is the complete Week 2 workflow. Run every cell from top to bottom. It loads and cleans the
+dataset, creates a stratified 80/10/10 split, compares four configurations on fixed
+development subsets, selects by validation F1, trains the selected uncased DistilBERT
+configuration at 256 tokens on all training rows, and compares it with Logistic Regression
+on identical test membership.
 
-The one-epoch checkpoint was frozen as the final Transformer model. A second epoch was not
-run because validation F1 was already near ceiling, remaining upside was very small, and a
-naive resume would alter the completed one-epoch learning-rate schedule. No further tuning
-occurred after the final test evaluation. See
-[`reports/transformer_training.md`](reports/transformer_training.md) and
-`results/transformer_experiments.csv` for the complete settings and caveats.
+Run B (`5e-5`, batch size `4`, one epoch) was selected with development-subset F1 `0.981982`.
+On the notebook's test split, DistilBERT reached F1 `0.993361` and Logistic Regression
+reached `0.992735`. The saved outputs are:
 
-### Frozen final comparison
+- `results/split_summary.csv`
+- `results/hyperparameter_experiments.csv`
+- `results/transformer_test_metrics.csv`
+- `results/transformer_test_predictions.csv.gz`
+- `results/model_comparison.csv`
 
-The final evaluator is guarded so its default invocation performs preflight checks without
-scoring the test split:
-
-```powershell
-python -m src.evaluate_frozen_comparison
-```
-
-Preflight verifies the version-controlled manifest SHA-256, split and label counts, source
-CSV schema, frozen checkpoint architecture and label mappings, required local artifacts,
-and fixed classic/Transformer configuration. After tests and validation-only GPU inference
-have passed, the final write-once comparison is run explicitly with:
-
-```powershell
-python -m src.evaluate_frozen_comparison --confirm-test-evaluation
-```
-
-That single command reconstructs classic-model rows by the manifest's original
-`source_row_id`, verifies source labels, fits TF-IDF and both classic classifiers only on
-frozen training rows, and scores Logistic Regression, Linear SVM, and the frozen one-epoch
-DistilBERT checkpoint on the same frozen test membership. It writes reusable metrics,
-per-row predictions/scores, and an audit record under `results/` and refuses to overwrite
-them. See [`reports/frozen_test_comparison.md`](reports/frozen_test_comparison.md).
-
-The confirmed frozen-test run is complete. Linear SVM was strongest with F1 `0.999471`,
-followed by DistilBERT at `0.998610` and Logistic Regression at `0.994726`. These scores use
-the same 46,423 test rows and are the appropriate final comparison; the older Week 1 table
-below used a different 20% holdout and is retained only as the original notebook result.
-
-Run the post-evaluation error analysis with:
-
-```powershell
-python -m src.analyze_frozen_errors --overwrite
-```
-
-This verifies the frozen predictions, aligns prepared rows by source ID, measures true
-untruncated token lengths, and saves confusion, model-overlap, length, truncation,
-opening-style, confidence, and compact qualitative-example artifacts. It does not retrain or
-tune any model. See [`reports/error_analysis.md`](reports/error_analysis.md).
+See
+[`reports/week2_transformer_notebook.md`](reports/week2_transformer_notebook.md) for the
+complete run record and validation.
 
 ## Current results (Week 1 baseline)
 
@@ -220,8 +152,8 @@ artifacts rather than a robust human-vs-AI signal.
 ## Roadmap
 
 - Week 1, Foundations and classic model: EDA and TF-IDF baseline (`aiTextClassifier.ipynb`). Done.
-- Week 2, Transformer: fine-tune DistilBERT and complete the frozen-test comparison. Done.
-- Week 3, Analysis and reporting: error analysis done; ethical discussion, report, and slides remain.
+- Week 2, Transformer: fine-tune DistilBERT and complete the held-out test comparison. Done.
+- Week 3, Analysis and reporting: ethical discussion, final report, and slides remain.
 
 ## Team
 

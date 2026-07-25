@@ -1,7 +1,7 @@
 {
   "status": "completed",
   "created_at_utc": "2026-07-21T00:44:42.750292+00:00",
-  "predictions_path": "results/frozen_test_predictions.csv.gz",
+  "predictions_path": "results/week3_error_analysis_source_predictions.csv.gz",
   "predictions_sha256": "11b6e98055bd0aeef177c5202b2478c3dc7c689218a2e66afb70853e1e413422",
   "prepared_dataset_path": "data/processed/distilbert_cased_seed42",
   "checkpoint_path": "checkpoints/distilbert-full-epoch1/checkpoint-23212",

@@ -26,7 +26,9 @@ from sklearn.metrics import (
 )
 
 
-DEFAULT_PREDICTIONS_PATH = Path("results/frozen_test_predictions.csv.gz")
+DEFAULT_PREDICTIONS_PATH = Path(
+    "results/week3_error_analysis_source_predictions.csv.gz"
+)
 DEFAULT_PREPARED_DATASET_PATH = Path("data/processed/distilbert_cased_seed42")
 DEFAULT_CHECKPOINT_PATH = Path(
     "checkpoints/distilbert-full-epoch1/checkpoint-23212"

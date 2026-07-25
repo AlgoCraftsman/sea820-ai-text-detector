@@ -1,0 +1,4 @@
+split,rows,human,ai_generated
+train,371381,227572,143809
+validation,46423,28446,17977
+test,46423,28447,17976
