@@ -100,6 +100,8 @@ This is a useful and slightly uncomfortable result. The model is not detecting a
 
 ## 8. Error Analysis
 
+We analyze the fine-tuned DistilBERT rather than the marginally higher-scoring Linear SVM for two reasons. DistilBERT is the advanced model this project centers on, and both models score near the ceiling on the same data, so the dataset artifacts that drive DistilBERT's errors are the same ones the linear model exploits. The patterns below therefore describe the task, not one model in isolation.
+
 The error analysis uses the fine-tuned DistilBERT predictions on the 46,423-row test split. No model, threshold, or preprocessing rule was changed during analysis.
 
 ### 8.1 Overall mistakes
