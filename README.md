@@ -13,8 +13,8 @@ This project builds and compares two families of models for that classification 
    SVM for comparison.
 2. Transformer: a fine-tuned DistilBERT (Week 2).
 
-The Week 2 notebook evaluates DistilBERT and Logistic Regression on identical
-held-out test membership.
+The Week 2 notebook evaluates DistilBERT against the Logistic Regression and Linear SVM
+classic baselines on identical held-out test membership.
 
 ## Repository structure
 
@@ -117,12 +117,13 @@ The lab-style [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_f
 is the complete Week 2 workflow. Run every cell from top to bottom. It loads and cleans the
 dataset, creates a stratified 80/10/10 split, compares four configurations on fixed
 development subsets, selects by validation F1, trains the selected uncased DistilBERT
-configuration at 256 tokens on all training rows, and compares it with Logistic Regression
-on identical test membership.
+configuration at 256 tokens on all training rows, and compares it with the Logistic Regression
+and Linear SVM classic baselines on identical test membership.
 
 Run B (`5e-5`, batch size `4`, one epoch) was selected with development-subset F1 `0.981982`.
-On the notebook's test split, DistilBERT reached F1 `0.993361` and Logistic Regression
-reached `0.992735`. The saved outputs are:
+On the notebook's test split, the Linear SVM was the strongest model with F1 `0.999360`,
+followed by DistilBERT at `0.993361` and Logistic Regression at `0.992735`. The fine-tuned
+Transformer does not beat the best classic baseline. The saved outputs are:
 
 - `results/split_summary.csv`
 - `results/hyperparameter_experiments.csv`
