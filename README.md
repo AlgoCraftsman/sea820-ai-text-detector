@@ -113,7 +113,7 @@ roughly 490k texts is the main cost.
 
 ### Week 2 Transformer workflow
 
-The lab-style [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_finetuning.ipynb)
+The [`notebooks/transformer_finetuning.ipynb`](notebooks/transformer_finetuning.ipynb)
 is the complete Week 2 workflow. Run every cell from top to bottom. It loads and cleans the
 dataset, creates a stratified 80/10/10 split, compares four configurations on fixed
 development subsets, selects by validation F1, trains the selected uncased DistilBERT
