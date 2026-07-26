@@ -23,13 +23,19 @@ Verified facts from the raw file:
 
 The class imbalance is mild but real, so we use stratified splits and treat F1 for the AI-generated class as the primary metric rather than accuracy alone.
 
+![Class distribution of the dataset. About 63 percent of the rows are human-written and 37 percent are AI-generated.](../results/figures/class_distribution.png)
+
 ## 3. Exploratory Data Analysis
 
 The texts are essays. The median length is 363 words and the 75th percentile is 471 words, with a mean of about 393 words and 2,270 characters.
 
 Length differs by class. Human essays are longer on average (mean 422 words, median 389) than AI essays (mean 344 words, median 337), but the distributions overlap heavily. Length on its own is only mildly discriminative, so we do not expect it to explain a near-perfect classifier.
 
+![Word-count distribution by class. Human essays skew slightly longer, but the two distributions overlap heavily.](../results/figures/text_length_distribution.png)
+
 The vocabulary is large. The most frequent content words are almost the same for both classes (`people`, `students`, `school`, `car`, `electoral`, `college`), which shows the two classes share the same prompt topics. This overlap is important later: because both classes write about the same subjects, topic words are weak evidence of authorship, and a model that scores highly is likely keying on style and surface patterns instead.
+
+![Most frequent content words per class. The overlap shows the classes share the same prompt topics.](../results/figures/top_words_by_class.png)
 
 Cleaning is light. We remove empty rows, collapse repeated whitespace, and de-duplicate on a normalized key before splitting.
 
@@ -46,6 +52,8 @@ We use a stratified 80/10/10 train, validation, and test split with `random_stat
 The classic baseline uses TF-IDF features with linear classifiers, following the Week 1 setup. Text is lowercased, URLs are stripped, and whitespace is collapsed. The `TfidfVectorizer` uses unigrams and bigrams, English stop-word removal, `min_df=5`, `max_features=50000`, and `sublinear_tf=True`.
 
 We train three classic models: Logistic Regression, Multinomial Naive Bayes, and a Linear SVM. Logistic Regression is the required baseline, and the other two are included for comparison. The strongest classic model sets the score the Transformer must beat.
+
+![Week 1 classic baseline comparison of the three classic models. The Linear SVM is the strongest classic model.](../results/figures/baseline_model_comparison.png)
 
 ### 4.3 Transformer
 
@@ -98,6 +106,8 @@ The error analysis uses the fine-tuned DistilBERT predictions on the 46,423-row 
 
 DistilBERT made 238 errors: 67 false positives and 171 false negatives, for an overall error rate of 0.51 percent. Errors are asymmetric. The AI-generated class had an error rate of 0.95 percent, compared with 0.24 percent for human text, so the model was more likely to miss an AI essay than to flag a human essay by mistake.
 
+![Confusion matrix for the fine-tuned DistilBERT on the held-out test split.](../results/figures/error_confusion_matrix.svg)
+
 The mistakes were usually confident. The median probability assigned to the wrong predicted class was 0.998, 217 of the 238 errors (91 percent) were at least 0.90 confident, and 192 (81 percent) were at least 0.99 confident. A high DistilBERT probability is therefore not reliable evidence of authorship, which is important for any real deployment.
 
 ### 8.2 Text length and truncation
@@ -110,6 +120,8 @@ The mistakes were usually confident. The median probability assigned to the wron
 | 501 to 750 | 7,791 | 0.42% | 27 | 6 |
 | 751 or more | 1,929 | 0.36% | 7 | 0 |
 
+![Error rate by word-count bin. Moderately short essays are the hardest, and long essays fail mostly as false positives.](../results/figures/error_rate_by_length.svg)
+
 The very shortest essays had no errors, but that bin has only 127 rows, so it is too small to support a claim that short text is easy. Moderately short essays of 101 to 250 words were the hardest group, and their errors were mostly false negatives. Longer essays had a different error mix: nearly all errors above 500 words were false positives, where long and well-organized human essays resemble the fluent structure the model associates with generated text.
 
 About 89 percent of test essays were longer than 256 tokens and were truncated. Truncated rows had a slightly lower error rate (0.50 percent) than non-truncated rows (0.61 percent), so truncation does not explain most mistakes. It does mean the model reaches near-perfect scores while reading only the first 256 tokens of most essays, which is further evidence that it relies on early, surface-level cues rather than full-document understanding.
@@ -117,6 +129,8 @@ About 89 percent of test essays were longer than 256 tokens and were truncated. 
 ### 8.3 Topic and writing style
 
 Using unsupervised NMF topics that do not use labels or predictions, the highest error rates fall on general-opinion essays (1.03 percent) and school essays (0.58 percent). Together these two topics account for 169 of the 238 errors, about 71 percent. These are broad, heterogeneous topics with fewer topic-specific cues, which fits the idea that the model leans on prompt and style patterns.
+
+![Error rate by unsupervised topic. General-opinion and school essays are the hardest groups.](../results/figures/error_rate_by_topic.svg)
 
 By opening style, essays that begin with a question had the highest error rate (0.72 percent), mostly false negatives, while essays that open with a salutation had the lowest (0.24 percent). Rhetorical questions and direct-address school essays appear in both classes, so they are weak authorship evidence even though they are recurring cues.
 
