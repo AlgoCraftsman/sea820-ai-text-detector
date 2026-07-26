@@ -35,9 +35,9 @@ Every Week 2 requirement in the project brief and task checklist is satisfied:
   all settings and validation results saved.
 - The best configuration is selected by validation F1 before test evaluation.
 - The selected Transformer is evaluated on the held-out test split.
-- Logistic Regression is retrained on the same training membership and scored
-  on the same test membership.
-- Accuracy, precision, recall, and F1 are reported for both models, including
+- The Logistic Regression and Linear SVM classic baselines are retrained on the
+  same training membership and scored on the same test membership.
+- Accuracy, precision, recall, and F1 are reported for all three models, including
   the exact performance difference.
 - The fine-tuned model checkpoint and initial comparison results are saved.
 
@@ -66,17 +66,20 @@ recall `0.990488`, and F1 `0.993278`.
 | Model | Accuracy | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: | ---: |
 | TF-IDF + Logistic Regression | 0.994399 | 0.997361 | 0.988151 | 0.992735 |
+| TF-IDF + Linear SVM | 0.999505 | 0.999777 | 0.998943 | 0.999360 |
 | Fine-tuned DistilBERT | 0.994873 | 0.996251 | 0.990487 | 0.993361 |
 
-On this split, DistilBERT improved F1 by `0.000626` and recall by `0.002336`
-over Logistic Regression, while precision was `0.001110` lower. These
-near-ceiling results describe this dataset and are not evidence of universal
-detector reliability.
+On this split, the Linear SVM is the strongest model with F1 `0.999360`.
+DistilBERT reached F1 `0.993361`, which does not beat the Linear SVM and only
+slightly exceeds Logistic Regression at `0.992735`. The fine-tuned Transformer
+offers no advantage over the best classic baseline here. These near-ceiling
+results describe this dataset and are not evidence of universal detector
+reliability.
 
 Independent validation rebuilt the seed-42 split and baseline from the source
-CSV. It verified all 46,423 test source IDs and labels, reproduced both models'
-saved metrics to floating-point precision, and confirmed that the baseline and
-Transformer used the same test membership.
+CSV. It verified all 46,423 test source IDs and labels, reproduced the Logistic
+Regression and Transformer saved metrics to floating-point precision, and confirmed
+that the baseline and Transformer used the same test membership.
 
 The notebook satisfies every Week 2 task in the project brief. Its result files
 are:
