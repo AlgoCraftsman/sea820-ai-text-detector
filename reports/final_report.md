@@ -6,7 +6,7 @@ SEA 820 NLP Final Project. Team: George and Kasra.
 
 Large Language Models have made machine-generated text hard to tell apart from human writing. This matters for academic integrity, content moderation, and misinformation. The goal of this project is to build, evaluate, and compare NLP models that classify a piece of text as human-written or AI-generated.
 
-We compare two families of models on the same data. The first is a classic baseline that uses TF-IDF features with linear classifiers. The second is a fine-tuned Transformer, DistilBERT. We report accuracy, precision, recall, and F1, run a detailed error analysis on the best Transformer, and discuss the ethical risks of deploying this kind of detector.
+We compare two families of models on the same data. The first is a classic baseline that uses TF-IDF features with linear classifiers. The second is a fine-tuned Transformer, DistilBERT. We report accuracy, precision, recall, and F1, run a detailed error analysis on the best model, and discuss the ethical risks of deploying this kind of detector.
 
 The main finding is that the task is easy to score highly on this dataset but hard to solve in a way that generalizes. The strongest model is the classic Linear SVM, and the fine-tuned Transformer does not beat it. The near-perfect scores appear to come from dataset and generator artifacts rather than a robust signal of authorship, which we return to in the error analysis and ethics sections.
 
@@ -45,7 +45,7 @@ Cleaning is light. We remove empty rows, collapse repeated whitespace, and de-du
 
 We build a normalized deduplication key by lowercasing the text, removing URLs, and collapsing whitespace, then drop duplicate rows by that key before any split. De-duplicating before the split prevents formatting-only variants from leaking across train and test.
 
-We use a stratified 80/10/10 train, validation, and test split with `random_state=42`. After cleaning and de-duplication, 464,227 usable rows remain, split into 371,381 train, 46,423 validation, and 46,423 test rows. Every split keeps the same class balance of about 61 percent human and 39 percent AI-generated. The test split is held out and only used for the final comparison.
+The Week 2 comparison uses a stratified 80/10/10 train, validation, and test split with `random_state=42`. After cleaning and de-duplication, 464,227 usable rows remain, split into 371,381 train, 46,423 validation, and 46,423 test rows. Every split keeps the same class balance of about 61 percent human and 39 percent AI-generated. The Week 1 classic notebook uses an 80/20 split of the same cleaned data, which gives a larger 92,846-row test set that the error analysis in Section 8 reuses. Test rows are held out and only used for final evaluation.
 
 ### 4.2 Classic baseline
 
@@ -59,7 +59,7 @@ We train three classic models: Logistic Regression, Multinomial Naive Bayes, and
 
 The Transformer is `distilbert-base-uncased`, fine-tuned with the Hugging Face `Trainer` API. Transformer preprocessing stays minimal: we drop empty texts and collapse whitespace but keep punctuation, capitalization, and stop words, because those are cues a Transformer can use. Text is tokenized with the pretrained DistilBERT tokenizer, truncated to a maximum length, and padded dynamically per batch with `DataCollatorWithPadding`.
 
-We set the maximum sequence length to 256 tokens. This is a practical choice for training time on the available GPU, and we track its impact in the error analysis, because a large share of essays are longer than 256 tokens.
+We set the maximum sequence length to 256 tokens, a practical choice for training time on the available GPU. Because a large share of essays are longer than this, the Transformer sees only their first 256 tokens, which is a limitation we note in Section 10.
 
 ## 5. Experiments
 
@@ -78,7 +78,7 @@ The selected configuration was then trained on the full 371,381-row training spl
 
 ## 6. Results and Model Comparison
 
-All models are scored on the same 46,423-row held-out test split. The classic models are refit on the same training rows and evaluated on the same test rows as DistilBERT, so the comparison is fair rather than a comparison across different splits.
+All three models are scored on the same 46,423-row held-out test split. The classic models are refit on the same training rows and evaluated on the same test rows as DistilBERT, so the comparison is fair rather than a comparison across different splits.
 
 | Model | Accuracy | Precision | Recall | F1 |
 | --- | ---: | ---: | ---: | ---: |
@@ -92,80 +92,65 @@ This result is the opposite of what the effort put into each model might suggest
 
 ## 7. Model Behavior
 
-To see what the classic model learns, we inspect the Logistic Regression coefficients.
+To see what the best model learns, we inspect the Linear SVM's TF-IDF coefficients.
 
-The most AI-indicative tokens are formal connectors and essay-structure words: `important`, `essay`, `additionally`, `conclusion`, `firstly`, `significant`, `essential`, `ensure`, and `privacy`. The most human-indicative tokens are informal or prompt-specific words: `going`, `kids`, `paragraph`, `percent`, `said`, `probably`, `driving`, `electors`, and `venus`.
+The most AI-indicative tokens are formal connectors and essay-structure words: `additionally`, `essay`, `important`, `essential`, `firstly`, `significant`, `conclusion`, `sincerely`, and `ensure`. The most human-indicative tokens are informal or prompt-specific words: `people`, `student`, `paragraph`, `schools`, `students`, `going`, `percent`, `driving`, and `venus`.
 
 This is a useful and slightly uncomfortable result. The model is not detecting authorship in a general sense. It is detecting a register. AI essays in this dataset tend to use polished connectors and explicit structure, while the human essays tend to use informal phrasing, spelling variants, and prompt-specific vocabulary. A classifier that keys on `additionally` and `firstly` will work well here, but it encodes a stylistic stereotype rather than a reliable authorship signal, and that stereotype is exactly what raises the fairness concerns discussed in the ethics section.
 
 ## 8. Error Analysis
 
-We analyze the fine-tuned DistilBERT rather than the marginally higher-scoring Linear SVM for two reasons. DistilBERT is the advanced model this project centers on, and both models score near the ceiling on the same data, so the dataset artifacts that drive DistilBERT's errors are the same ones the linear model exploits. The patterns below therefore describe the task, not one model in isolation.
-
-The error analysis uses the fine-tuned DistilBERT predictions on the 46,423-row test split. No model, threshold, or preprocessing rule was changed during analysis.
+We analyze the errors of the best model, the TF-IDF Linear SVM. This analysis uses the Week 1 notebook's 92,846-row (80/20) held-out test split, a different partition than the 46,423-row split used for the Section 6 comparison. No model, threshold, or preprocessing rule was changed during the analysis. Following the Week 11 lab, we isolate the false positives and false negatives, compare word counts, inspect examples, and read the SVM's TF-IDF coefficients.
 
 ### 8.1 Overall mistakes
 
-DistilBERT made 238 errors: 67 false positives and 171 false negatives, for an overall error rate of 0.51 percent. Errors are asymmetric. The AI-generated class had an error rate of 0.95 percent, compared with 0.24 percent for human text, so the model was more likely to miss an AI essay than to flag a human essay by mistake.
+On the 92,846-row test split the Linear SVM made only 40 errors: 9 false positives (human text predicted as AI) and 31 false negatives (AI text predicted as human), against 92,806 correct predictions. The errors are asymmetric. False negatives outnumber false positives by more than three to one, so the model was more likely to miss an AI essay than to flag a human essay by mistake. The overall error rate is about 0.04 percent, which is why the near-perfect score should be read with caution rather than treated as a solved task.
 
-![Confusion matrix for the fine-tuned DistilBERT on the held-out test split.](../results/figures/error_confusion_matrix.svg)
+### 8.2 Text length
 
-The mistakes were usually confident. The median probability assigned to the wrong predicted class was 0.998, 217 of the 238 errors (91 percent) were at least 0.90 confident, and 192 (81 percent) were at least 0.99 confident. A high DistilBERT probability is therefore not reliable evidence of authorship, which is important for any real deployment.
+| Outcome | Count | Mean words | Median words |
+| --- | ---: | ---: | ---: |
+| Correct | 92,806 | 393.6 | 362 |
+| False negative | 31 | 304.5 | 356 |
+| False positive | 9 | 322.0 | 335 |
 
-### 8.2 Text length and truncation
+| Word count | Test texts | Errors | Error rate |
+| --- | ---: | ---: | ---: |
+| 0 to 100 | 248 | 1 | 0.40% |
+| 101 to 250 | 16,288 | 12 | 0.07% |
+| 251 to 500 | 57,156 | 27 | 0.05% |
+| 501 or more | 19,154 | 0 | 0.00% |
 
-| Word count | Support | Error rate | False positives | False negatives |
-| --- | ---: | ---: | ---: | ---: |
-| 0 to 100 | 127 | 0.00% | 0 | 0 |
-| 101 to 250 | 8,004 | 0.76% | 12 | 49 |
-| 251 to 500 | 28,572 | 0.48% | 21 | 116 |
-| 501 to 750 | 7,791 | 0.42% | 27 | 6 |
-| 751 or more | 1,929 | 0.36% | 7 | 0 |
+Misclassified essays are shorter on average than correct ones (about 305 to 322 words versus 394), and all 40 errors are at or below 500 words. The shortest group has the highest rate, but it holds only 248 texts and a single error, so the cautious reading is that mistakes concentrate in shorter essays, which give a TF-IDF model fewer word and bigram cues to work with.
 
-![Error rate by word-count bin. Moderately short essays are the hardest, and long essays fail mostly as false positives.](../results/figures/error_rate_by_length.svg)
+### 8.3 Representative errors
 
-The very shortest essays had no errors, but that bin has only 127 rows, so it is too small to support a claim that short text is easy. Moderately short essays of 101 to 250 words were the hardest group, and their errors were mostly false negatives. Longer essays had a different error mix: nearly all errors above 500 words were false positives, where long and well-organized human essays resemble the fluent structure the model associates with generated text.
+False positives are human essays predicted as AI. They include a personal travel essay with repeated first-person sentence patterns, a moral-argument essay that restates one claim in a formulaic structure, and a career essay built on a repeated question-and-reason pattern. In each case the organized, repetitive structure resembles patterns the SVM associates with AI writing, and it outweighs human-looking spelling and character errors. Grammar mistakes do not protect a human essay from being flagged.
 
-About 89 percent of test essays were longer than 256 tokens and were truncated. Truncated rows had a slightly lower error rate (0.50 percent) than non-truncated rows (0.61 percent), so truncation does not explain most mistakes. It does mean the model reaches near-perfect scores while reading only the first 256 tokens of most essays, which is further evidence that it relies on early, surface-level cues rather than full-document understanding.
+False negatives are AI essays predicted as human. They include an argument about first impressions full of character substitutions and student-level phrasing, a short 116-word education passage with few cues, and an informal problem-solving essay that opens "Wey, it's me, your average 8th grade student!" with an emoji and misspellings. Character corruption, informal student voice, and short length make generated text resemble the human class. The SVM's strongest human-indicative features (`people`, `student`, `paragraph`, `schools`, `students`) are exactly the student-essay vocabulary several of these false negatives use.
 
-### 8.3 Topic and writing style
+### 8.4 Why the model fails
 
-Using unsupervised NMF topics that do not use labels or predictions, the highest error rates fall on general-opinion essays (1.03 percent) and school essays (0.58 percent). Together these two topics account for 169 of the 238 errors, about 71 percent. These are broad, heterogeneous topics with fewer topic-specific cues, which fits the idea that the model leans on prompt and style patterns.
-
-![Error rate by unsupervised topic. General-opinion and school essays are the hardest groups.](../results/figures/error_rate_by_topic.svg)
-
-By opening style, essays that begin with a question had the highest error rate (0.72 percent), mostly false negatives, while essays that open with a salutation had the lowest (0.24 percent). Rhetorical questions and direct-address school essays appear in both classes, so they are weak authorship evidence even though they are recurring cues.
-
-### 8.4 Representative errors
-
-False positives are human essays predicted as AI. Examples include an encyclopedic Mars summary whose explanatory format resembles generated prose, and an informal school letter whose formulaic argument structure outweighs its spelling errors. These cases show that grammatical mistakes do not reliably protect human text from being flagged.
-
-False negatives are AI essays predicted as human. Examples include a simple student-voice letter about the Electoral College, a personal anecdote full of character substitutions, and a rhetorical-question school essay. Character corruption and a simple student voice make generated text look human.
-
-The test set also contains near-parallel essays that share a prompt structure with small perturbations. This does not prove train and test leakage, since exact de-duplication was applied, but it shows that prompt families and mechanical text changes are important characteristics of the dataset that a random split does not fully separate.
-
-### 8.5 Why the model fails
-
-The evidence supports four cautious explanations. Prompt and topic cues overlap across classes, so school letters and formulaic arguments appear in both. Artificial-looking corruption weakens authorship cues in both directions. The model relies on dataset-specific regularities, shown by its very high confidence on wrong predictions. Near-parallel text families are hard for a random split to separate cleanly. Testing these causally would require a new experiment with prompt-family grouping and evaluation on unseen generators.
+The examples and the coefficient inspection support three cautious explanations. First, formulaic human essays share repeated, organized patterns with AI-labelled essays, so structure alone is weak evidence of authorship. Second, AI text containing misspellings, character substitutions, emojis, and an informal student voice can look like the human class. Third, shorter texts give a TF-IDF model fewer cues, making its vocabulary-based decisions less stable. These are associations in one held-out split, not proof that length causes an error. The near-perfect score likely depends partly on dataset-specific lexical and formatting patterns, so the model should not be treated as a universal AI-text detector.
 
 ## 9. Ethical Discussion
 
 The results connect directly to the ethics of deploying an AI-text detector.
 
-The clearest risk is harm to non-native English speakers. Section 7 shows the classic model keys on formal connectors and explicit essay structure to mark text as AI. Many non-native writers are taught to write with exactly these connectors and structures. A detector trained on this data could disproportionately flag competent non-native writing as machine-generated, which in an academic setting means false accusations against students who did nothing wrong.
+The clearest risk is harm to non-native English speakers. Section 7 shows the best model keys on formal connectors and explicit essay structure to mark text as AI. Many non-native writers are taught to write with exactly these connectors and structures. A detector trained on this data could disproportionately flag competent non-native writing as machine-generated, which in an academic setting means false accusations against students who did nothing wrong.
 
-The confidence pattern makes this worse. In the error analysis, 81 percent of the mistakes were made with at least 0.99 confidence. A detector that is confidently wrong is dangerous, because downstream users, such as instructors or moderation systems, are likely to trust a high score. Presenting these outputs as proof of authorship would be misleading. The scores describe this dataset, not a universal test of who wrote a text.
+The near-perfect score makes this risk easy to overstate. A model that scores above 0.99 looks authoritative, but Sections 7 and 8 show it is separating a writing register and reacting to lexical cues, not proving who wrote a text. Presenting such an output as proof of authorship would be misleading. The scores describe this dataset, not a universal test of who wrote a text.
 
 There is also dataset and generator bias. The dataset draws on a narrow set of prompts (school essays, the Electoral College, driverless cars, Mars) and a limited set of generators. The models learn artifacts of those prompts and generators, including specific phrasings and even character-corruption patterns, rather than a general property of AI text. A detector this good on this data would likely fail on text from a different generator or a different genre, so a near-perfect score here should not be marketed as a reliable product.
 
-Finally, the two error types carry different costs. A false positive can wrongly penalize a human writer, while a false negative lets AI text pass as human. Our best Transformer made more false negatives than false positives, but in an academic-integrity setting the false positives are the more serious harm, because they damage individual students. Any real use of a detector should treat its output as a weak signal for human review, never as an automatic judgment.
+Finally, the two error types carry different costs. A false positive can wrongly penalize a human writer, while a false negative lets AI text pass as human. Our best model made more false negatives than false positives (31 versus 9), but in an academic-integrity setting the false positives are the more serious harm, because they damage individual students. Any real use of a detector should treat its output as a weak signal for human review, never as an automatic judgment.
 
 ## 10. Limitations
 
-This study uses one dataset with a limited set of prompts and generators, so the results may not transfer to other sources of AI text. We fine-tuned one Transformer for one epoch at a 256-token limit, so a larger model, more epochs, or a longer sequence length could change the Transformer numbers, though the classic baseline leaves little headroom to beat. The topic and style findings are associations, not causes, and the near-parallel prompt families mean a random split does not fully isolate unseen writing.
+This study uses one dataset with a limited set of prompts and generators, so the results may not transfer to other sources of AI text. We fine-tuned one Transformer for one epoch at a 256-token limit, so a larger model, more epochs, or a longer sequence length could change the Transformer numbers, though the classic baseline leaves little headroom to beat. The error-analysis patterns are associations from a single held-out split rather than causal claims, and the error analysis covers only the best model rather than every model in the comparison.
 
 ## 11. Conclusion
 
-We built and compared classic and Transformer models for detecting AI-generated text. On a shared held-out test split, the strongest model is the classic TF-IDF Linear SVM with an F1 of 0.9994, and the fine-tuned DistilBERT (F1 0.9934) does not beat it and roughly matches Logistic Regression. The scores are near-perfect, but the error analysis and feature inspection show that this reflects dataset and generator artifacts rather than a robust signal of authorship. The model keys on register and surface cues, is confidently wrong when it fails, and reads only the first part of most essays.
+We built and compared classic and Transformer models for detecting AI-generated text. On a shared held-out test split, the strongest model is the classic TF-IDF Linear SVM with an F1 of 0.9994, and the fine-tuned DistilBERT (F1 0.9934) does not beat it and roughly matches Logistic Regression. The scores are near-perfect, but the error analysis and feature inspection show that this reflects dataset and generator artifacts rather than a robust signal of authorship. The model keys on register and lexical cues, and its few errors cluster in shorter, more formulaic essays.
 
 The practical takeaway is twofold. First, a simple linear baseline is a strong and efficient choice for this task, and a Transformer is not required to reach the ceiling on this data. Second, and more important, a high score here does not mean AI-text detection is solved. A detector built on this data would risk flagging non-native writers and would likely fail on new generators, so it should be treated as a weak signal for human review rather than a reliable judgment of authorship.
