@@ -24,7 +24,6 @@ sea820-ai-text-detector/
 │   ├── aiTextClassifier.ipynb          # Week 1: EDA and classic TF-IDF baseline
 │   └── transformer_finetuning.ipynb   # Week 2: Transformer fine-tuning
 ├── data/                               # dataset lands here at runtime (not committed)
-├── src/                                # Week 3 error-analysis utility
 ├── results/                            # saved metrics and figures
 ├── reports/                            # written reports
 ├── slides/                             # presentation
@@ -136,19 +135,14 @@ complete run record and validation.
 
 ### Week 3 error analysis
 
-After running the Week 2 notebook, analyze the selected DistilBERT's held-out
-mistakes with:
-
-```powershell
-python -m src.analyze_errors --overwrite
-```
-
-The workflow verifies and aligns the saved predictions, identifies every false
-positive and false negative, measures error patterns by length, 256-token
-truncation, opening style, and label-blind NMF topic, saves representative
-examples, and creates three figures. See
-[`reports/error_analysis.md`](reports/error_analysis.md) for the findings and
-failure hypotheses.
+The best tested model is the Linear SVM, so its error analysis is included
+directly in Sections 8 and 9 of
+[`notebooks/aiTextClassifier.ipynb`](notebooks/aiTextClassifier.ipynb).
+The code follows the Week 11 lab: it isolates false positives and false
+negatives, compares word counts and simple length groups, prints three examples
+of each error type, and inspects the SVM's strongest TF-IDF features. See
+[`reports/error_analysis.md`](reports/error_analysis.md) for the resulting
+examples, patterns, and failure hypotheses.
 
 ## Current results (Week 1 baseline)
 
