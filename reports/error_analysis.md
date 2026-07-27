@@ -1,196 +1,87 @@
-# Error Analysis of the Selected DistilBERT
+# Linear SVM Error Analysis
 
-## Scope and safeguards
+The Linear SVM is the project's best tested model (F1 `0.9994`). This analysis
+uses its predictions on the same 92,846-row held-out test set used in
+`notebooks/aiTextClassifier.ipynb`.
 
-This analysis examines the held-out predictions exported by
-`notebooks/transformer_finetuning.ipynb`. It uses the selected uncased
-DistilBERT, its 256-token limit, and the exact 46,423-row test membership used
-for the reported Week 2 metrics. The prediction artifact is verified by
-SHA-256, and every `source_row_id` and label is aligned with the original CSV
-before analysis.
+The implementation follows the Week 11 lab rather than a separate analysis
+pipeline: align texts and predictions in a pandas DataFrame, isolate false
+positives and false negatives with Boolean filters, compare word counts, print
+examples, and inspect the Linear SVM's TF-IDF coefficients.
 
-No model, threshold, preprocessing rule, or checkpoint was changed. Topic
-discovery uses TF-IDF and eight-component non-negative matrix factorization
-(NMF) across all held-out texts. It does not use labels, predictions, or error
-outcomes, so the topic categories were not chosen to make the errors look more
-systematic.
+## Error counts
 
-## Overall mistakes
-
-| Outcome | Rows |
+| Outcome | Count |
 | --- | ---: |
-| True negatives | 28,380 |
-| False positives | 67 |
-| False negatives | 171 |
-| True positives | 17,805 |
-| Total errors | 238 |
+| Correct | 92,806 |
+| False positive (human predicted as AI) | 9 |
+| False negative (AI predicted as human) | 31 |
 
-![DistilBERT held-out confusion matrix](../results/figures/error_confusion_matrix.svg)
+False negatives account for 31 of the 40 mistakes. The model is therefore more
+likely to miss AI-labelled text than to flag human-labelled text on this test
+split.
 
-The model achieved accuracy `0.994873`, precision `0.996251`, recall
-`0.990487`, and F1 `0.993361`, matching the Week 2 result exactly. Errors were
-asymmetric: false negatives outnumbered false positives by about 2.55 to 1.
-The AI-generated class had an error rate of `0.9513%`, compared with `0.2355%`
-for human-written rows. In this test set, the model was more likely to miss an
-AI-generated essay than to flag a human essay incorrectly.
+## Text-length pattern
 
-The mistakes were usually confident. The median probability assigned to the
-incorrect predicted class was `0.997661`; 217 of 238 errors (`91.2%`) were at
-least 0.90 confident, and 192 (`80.7%`) were at least 0.99 confident. A high
-DistilBERT probability therefore should not be interpreted as reliable proof
-of authorship.
+| Word count | Test texts | Errors | Error rate |
+| --- | ---: | ---: | ---: |
+| 0-100 | 248 | 1 | 0.4032% |
+| 101-250 | 16,288 | 12 | 0.0737% |
+| 251-500 | 57,156 | 27 | 0.0472% |
+| 501+ | 19,154 | 0 | 0.0000% |
 
-## Text length and truncation
+False negatives averaged 304.5 words, false positives averaged 322.0 words,
+and correct predictions averaged 393.6 words. All 40 errors were at or below
+500 words. The shortest group has the highest rate, but it contains only 248
+texts and one error. The cautious conclusion is that mistakes in this run were
+concentrated in shorter texts, which provide fewer TF-IDF word and bigram cues.
 
-| Word count | Support | Errors | Error rate | FP | FN |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| 0-100 | 127 | 0 | 0.0000% | 0 | 0 |
-| 101-250 | 8,004 | 61 | 0.7621% | 12 | 49 |
-| 251-500 | 28,572 | 137 | 0.4795% | 21 | 116 |
-| 501-750 | 7,791 | 33 | 0.4236% | 27 | 6 |
-| 751+ | 1,929 | 7 | 0.3629% | 7 | 0 |
+## False positives
 
-![Error rate by word-count bin](../results/figures/error_rate_by_length.svg)
+A false positive is human-labelled text predicted as AI-generated.
 
-The very shortest bin contained only 127 examples and no errors, so it does not
-support the claim that extremely short text is consistently difficult.
-Moderately short essays of 101-250 words were the hardest length group, with an
-error rate about 1.59 times the 251-500-word rate. Their errors were primarily
-false negatives.
+| Processed row | Text type and short excerpt | Hypothesis |
+| ---: | --- | --- |
+| 68,543 | Personal travel essay: "The first place I would want to go is the Bahamas..." | Repeated first-person sentence patterns and a simple, orderly narrative may resemble patterns the SVM associated with AI writing. |
+| 272,725 | Moral argument: "Have you ever made a awful mistake..." | The essay repeatedly states and restates one claim, creating a formulaic structure despite its grammatical errors. |
+| 301,640 | Travel/career essay: "Have you ever wanted ... to another country..." | A repeated question-and-reason structure may outweigh mechanical substitutions such as `TM` that look human or corrupted. |
 
-Longer groups had lower total error rates but a different error mix. All seven
-errors above 750 words were false positives, and 27 of 33 errors between 501
-and 750 words were false positives. A plausible explanation is that long,
-well-structured human essays can resemble the organization and fluency the
-model associates with generated prose, while only the first 256 tokens are
-available to the classifier.
+These examples show that spelling and grammar problems do not prevent a human
+essay from being flagged. A TF-IDF Linear SVM uses weighted words and bigrams,
+not evidence about who produced the text.
 
-The tokenizer found that 41,309 test rows (`88.98%`) exceeded 256 tokens.
-Truncated rows had a `0.5011%` error rate, compared with `0.6062%` for
-non-truncated rows. This descriptive result does not show that truncation
-helps: text length, label balance, topic, and writing style differ between the
-groups. It does show that truncation alone does not explain most mistakes.
+## False negatives
 
-## Writing style
+A false negative is AI-labelled text predicted as human-written.
 
-| Opening style | Support | Errors | Error rate | FP | FN |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Opening question | 4,859 | 35 | 0.7203% | 5 | 30 |
-| Other | 36,532 | 191 | 0.5228% | 61 | 130 |
-| Salutation | 5,032 | 12 | 0.2385% | 1 | 11 |
+| Processed row | Text type and short excerpt | Hypothesis |
+| ---: | --- | --- |
+| 225,486 | Argument about first impressions: "You may or may not believe that first impression can change..." | Character substitutions and awkward student-level phrasing make the AI-labelled text resemble noisy human writing. |
+| 246,071 | Short education passage: "Before long, I saw a photo in which a child stood with a rifle." | At 116 words, the passage supplies relatively few cues; its education vocabulary also overlaps the student essays in the human class. |
+| 398,539 | Informal problem-solving essay: "Wey, it's me, your average 8th grade student!" | An emoji, informal voice, misspellings, and merged words strongly imitate authentic student writing. |
 
-Essays opening with a question had the highest error rate, about 1.38 times the
-rate for other openings. Thirty of their 35 errors were false negatives.
-Rhetorical questions and direct-address school essays occur in both labels, so
-they provide weak authorship evidence even though they are recurring stylistic
-cues.
+The SVM's strongest human-indicative features include `people`, `student`,
+`paragraph`, `schools`, and `students`. Several false negatives use this
+student-writing vocabulary or style, which may pull them toward the human
+class.
 
-Manual inspection also found spelling errors, character substitutions,
-informal phrasing, repeated claims, and rigid multi-reason essay structures in
-both false positives and false negatives. The overlap suggests that the model
-has learned dataset-specific style and prompt patterns that do not map cleanly
-to human versus AI authorship.
+## Why the model failed
 
-## Topic patterns
+The examples and coefficient inspection support three descriptive hypotheses:
 
-The NMF topics are descriptive groups identified by their highest-weight
-terms. They are not manually assigned ground-truth topics.
+1. Formulaic human essays can share repeated, organized patterns with
+   AI-labelled essays.
+2. AI-labelled text containing misspellings, character substitutions, emojis,
+   and informal student voice can resemble the human class.
+3. Shorter texts provide fewer TF-IDF cues, making vocabulary-based decisions
+   less stable.
 
-| Topic | Interpretation from top terms | Support | Errors | Error rate | FP | FN |
-| --- | --- | ---: | ---: | ---: | ---: | ---: |
-| Topic 1 | General opinion and personal reasoning | 8,661 | 89 | 1.0276% | 29 | 60 |
-| Topic 5 | School, students, classes, and teachers | 13,729 | 80 | 0.5827% | 24 | 56 |
-| Topic 7 | Driving, driverless cars, and phones | 5,168 | 23 | 0.4450% | 3 | 20 |
-| Topic 6 | Technology, coding, facial expressions | 3,084 | 9 | 0.2918% | 1 | 8 |
-| Topic 4 | Venus and planetary exploration | 2,543 | 7 | 0.2753% | 2 | 5 |
-| Topic 3 | Car use, transportation, and pollution | 5,782 | 15 | 0.2594% | 7 | 8 |
-| Topic 8 | Mars, the "face," and landforms | 2,339 | 6 | 0.2565% | 1 | 5 |
-| Topic 2 | Electoral College and voting | 5,117 | 9 | 0.1759% | 0 | 9 |
+These observations are associations in one held-out split, not evidence that
+length or topic causes an error. The model's near-perfect score likely depends
+partly on dataset-specific lexical and formatting patterns, so it should not be
+treated as a universal AI-text detector.
 
-![Error rate by unsupervised topic](../results/figures/error_rate_by_topic.svg)
+## Reproduction
 
-General-opinion essays had the highest topic error rate, about twice the
-overall `0.5127%` rate. Their broad vocabulary and varied personal arguments
-make them a heterogeneous group with fewer topic-specific cues. School essays
-produced the second-most elevated rate and 80 errors. Together, the
-general-opinion and school topics account for 169 of 238 errors (`71.0%`).
-These are also the two largest topics, so both support and rate should be
-reported rather than raw error count alone.
-
-The topic result is evidence of association, not causation. Topic vocabulary
-may be entangled with prompt family, generator, text length, corruption style,
-or class prevalence.
-
-## Representative false positives
-
-A false positive is a human-labeled row predicted as AI-generated.
-
-| Source row | Incorrect-class confidence | Short excerpt | Hypothesis |
-| ---: | ---: | --- | --- |
-| 9615 | 0.999990 | "Summary The 'Face on Mars' was found during a search..." | The encyclopedic summary format and familiar Mars-prompt vocabulary resemble generated explanatory prose. |
-| 62511 | 0.999966 | "Dear TEACHER_NAME HEY IM SORRY... but i don't agree..." | Despite informal spelling and punctuation, the direct-address school prompt and repeated reasons may dominate the model's decision. |
-| 264816 | 0.999968 | "In the life today, education is important for people..." | The essay combines a formulaic education argument with extensive word corruption, a pattern that may resemble synthetic or transformed training examples. |
-
-These cases show that grammatical errors do not reliably protect human text
-from being flagged. Topic, prompt structure, and organization can outweigh
-surface-level human imperfections.
-
-## Representative false negatives
-
-A false negative is an AI-labeled row predicted as human-written.
-
-| Source row | Incorrect-class confidence | Short excerpt | Hypothesis |
-| ---: | ---: | --- | --- |
-| 237649 | 0.999986 | "Dear state senator, I want to talk about how we elect the president." | The simple student voice, direct address, and spelling substitutions make the generated essay resemble an authentic classroom response. |
-| 151905 | 0.999985 | "Last MMK, I had a math test on my first period." | A personal anecdote plus numerous character substitutions provides strong human-like noise. |
-| 161325 | 0.999985 | "Do you even Wonder how school would be like if you could pick..." | Rhetorical questioning, repetition, and student-level errors imitate the style of human school essays. |
-
-The test set contains visibly near-parallel variants of some false-negative
-essays. For example, rows 237649 and 89430 share the same Electoral College
-letter structure, while rows 161325 and 131400 share the same elective-class
-argument with different character substitutions. This does not prove train-test
-leakage, but it suggests that prompt families and text perturbations are
-important dataset characteristics. Exact duplicate removal cannot eliminate
-semantic near-duplicates or mechanically altered variants.
-
-## Why the model fails
-
-The evidence supports four cautious hypotheses:
-
-1. **Prompt and topic cues overlap across labels.** School letters, rhetorical
-   questions, and formulaic arguments occur in both human and AI-labeled rows.
-2. **Artificial-looking corruption weakens authorship cues.** Character
-   substitutions and spelling noise can make AI text look human and human text
-   look transformed.
-3. **The model relies on dataset-specific regularities.** Very high confidence
-   on wrong predictions indicates that it has learned strong but imperfect
-   correlations rather than a general test of authorship.
-4. **Near-parallel text families complicate random splitting.** Exact
-   de-duplication does not group paraphrases, prompt siblings, or corrupted
-   variants before splitting.
-
-These are descriptive hypotheses from one held-out dataset. Testing them
-causally would require a new experiment with prompt-family grouping,
-near-duplicate detection, and evaluation on unseen generators and genres.
-
-## Reproducible outputs
-
-- `results/error_analysis_metrics.csv`: overall metrics, confusion counts, and
-  confidence summaries.
-- `results/error_analysis_slices.csv`: length, truncation, label, opening-style,
-  and topic slices.
-- `results/error_analysis_topics.csv`: topic support, terms, and error rates.
-- `results/error_analysis_topic_terms.csv`: ranked NMF terms and weights.
-- `results/error_examples.csv.gz`: all 238 false-positive and false-negative
-  rows with compact excerpts.
-- `results/error_analysis_summary.json`: input hash, model configuration,
-  safeguards, and output manifest.
-
-Run the complete analysis after executing the Week 2 notebook:
-
-```powershell
-python -m src.analyze_errors --overwrite
-```
-
-The explicit flag is required only when replacing an existing complete result
-set.
+Run `notebooks/aiTextClassifier.ipynb` from top to bottom. Sections 8 and 9
+contain the lab-aligned SVM feature inspection and error analysis.
